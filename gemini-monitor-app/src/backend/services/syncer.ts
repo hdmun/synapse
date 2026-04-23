@@ -1,0 +1,142 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { db } from '../db';
+import { projects, sessions, messages, thoughts, toolCalls, plans } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+export interface SessionData {
+  sessionId: string;
+  projectHash: string;
+  startTime: string;
+  lastUpdated: string;
+  messages: any[];
+}
+
+export class Syncer {
+  private baseDir: string;
+  private onUpdate?: (sessionId: string, data: any) => void;
+
+  constructor(baseDir: string, onUpdate?: (sessionId: string, data: any) => void) {
+    this.baseDir = baseDir;
+    this.onUpdate = onUpdate;
+  }
+
+  async syncSessionFile(filePath: string) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const data: SessionData = JSON.parse(content);
+      const sessionId = data.sessionId;
+
+      const projectDir = path.dirname(path.dirname(filePath));
+      const projectPath = await this.getProjectPath(projectDir);
+      const projectId = data.projectHash || path.basename(projectDir);
+
+      await db.insert(projects).values({
+        id: projectId,
+        path: projectPath,
+        name: path.basename(projectPath),
+        lastUpdated: new Date(data.lastUpdated),
+      }).onConflictDoUpdate({
+        target: projects.id,
+        set: { lastUpdated: new Date(data.lastUpdated) }
+      });
+
+      await db.insert(sessions).values({
+        id: sessionId,
+        projectId: projectId,
+        startTime: new Date(data.startTime),
+        lastUpdated: new Date(data.lastUpdated),
+        model: data.messages.find(m => m.model)?.model || 'unknown',
+      }).onConflictDoUpdate({
+        target: sessions.id,
+        set: { lastUpdated: new Date(data.lastUpdated) }
+      });
+
+      for (const msg of data.messages) {
+        if (msg.type === 'info') continue;
+
+        await db.insert(messages).values({
+          id: msg.id,
+          sessionId: sessionId,
+          type: msg.type,
+          content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+          timestamp: new Date(msg.timestamp),
+          inputTokens: msg.tokens?.input,
+          outputTokens: msg.tokens?.output,
+          thoughtTokens: msg.tokens?.thoughts,
+        }).onConflictDoNothing();
+
+        if (msg.thoughts && Array.isArray(msg.thoughts)) {
+          for (const thought of msg.thoughts) {
+            await db.insert(thoughts).values({
+              messageId: msg.id,
+              subject: thought.subject,
+              description: thought.description,
+              timestamp: new Date(thought.timestamp),
+            }).onConflictDoNothing();
+          }
+        }
+
+        if (msg.toolCalls && Array.isArray(msg.toolCalls)) {
+          for (const tc of msg.toolCalls) {
+            await db.insert(toolCalls).values({
+              id: tc.id,
+              messageId: msg.id,
+              name: tc.name,
+              args: JSON.stringify(tc.args),
+              result: JSON.stringify(tc.result),
+              status: tc.status,
+              timestamp: new Date(tc.timestamp),
+            }).onConflictDoNothing();
+          }
+        }
+      }
+
+      console.log(`Synced session: ${sessionId}`);
+      if (this.onUpdate) {
+        this.onUpdate(sessionId, { type: 'session' });
+      }
+    } catch (err) {
+      console.error(`Error syncing session ${filePath}:`, err);
+    }
+  }
+
+  async syncPlanFile(filePath: string, sessionId: string) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const tasks = content.match(/- \[[ xX]\]/g) || [];
+      const completed = tasks.filter(t => t.includes('[x]') || t.includes('[X]')).length;
+      const total = tasks.length;
+      const progress = total > 0 ? (completed / total) * 100 : 0;
+
+      await db.insert(plans).values({
+        id: filePath,
+        sessionId: sessionId,
+        content: content,
+        totalTasks: total,
+        completedTasks: completed,
+        lastUpdated: new Date(),
+      }).onConflictDoUpdate({
+        target: plans.id,
+        set: { content, totalTasks: total, completedTasks: completed, lastUpdated: new Date() }
+      });
+
+      const session = await db.query.sessions.findFirst({ where: eq(sessions.id, sessionId) });
+      if (session?.projectId) {
+        await db.update(projects).set({ progress }).where(eq(projects.id, session.projectId));
+        if (this.onUpdate) this.onUpdate(sessionId, { type: 'plan', progress });
+      }
+    } catch (err) {
+      console.error(`Error syncing plan ${filePath}:`, err);
+    }
+  }
+
+  private async getProjectPath(projectDir: string): Promise<string> {
+    try {
+      const rootFile = path.join(projectDir, '.project_root');
+      return await fs.readFile(rootFile, 'utf-8');
+    } catch {
+      return projectDir;
+    }
+  }
+}
