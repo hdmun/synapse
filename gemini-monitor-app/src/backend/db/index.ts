@@ -5,10 +5,79 @@ import * as schema from './schema';
 const sqlite = new Database('gemini-monitor.db');
 export const db = drizzle(sqlite, { schema });
 
-// 1. 데이터베이스 초기화 및 FTS5 가상 테이블 생성 (기본 테이블은 Drizzle-kit으로 관리 가능하지만, FTS는 수동 관리 추천)
 export async function initDb() {
-  // FTS5 가상 테이블 생성 (검색 성능 최적화)
-  // content 테이블은 messages의 내용을 미러링합니다.
+  // 1. 기본 테이블 수동 생성 (messages 테이블이 존재해야 트리거 생성 가능)
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      path TEXT NOT NULL,
+      name TEXT NOT NULL,
+      total_tokens INTEGER DEFAULT 0,
+      progress REAL DEFAULT 0,
+      last_updated INTEGER NOT NULL
+    );
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      project_id TEXT REFERENCES projects(id),
+      start_time INTEGER NOT NULL,
+      last_updated INTEGER NOT NULL,
+      status TEXT DEFAULT 'active',
+      model TEXT,
+      total_tokens INTEGER DEFAULT 0
+    );
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      session_id TEXT REFERENCES sessions(id),
+      type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      input_tokens INTEGER,
+      output_tokens INTEGER,
+      thought_tokens INTEGER
+    );
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS thoughts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id TEXT REFERENCES messages(id),
+      subject TEXT,
+      description TEXT NOT NULL,
+      timestamp INTEGER NOT NULL
+    );
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS tool_calls (
+      id TEXT PRIMARY KEY,
+      message_id TEXT REFERENCES messages(id),
+      name TEXT NOT NULL,
+      args TEXT,
+      result TEXT,
+      status TEXT NOT NULL,
+      timestamp INTEGER NOT NULL
+    );
+  `);
+
+  sqlite.run(`
+    CREATE TABLE IF NOT EXISTS plans (
+      id TEXT PRIMARY KEY,
+      session_id TEXT REFERENCES sessions(id),
+      project_id TEXT REFERENCES projects(id),
+      content TEXT NOT NULL,
+      total_tasks INTEGER DEFAULT 0,
+      completed_tasks INTEGER DEFAULT 0,
+      last_updated INTEGER NOT NULL
+    );
+  `);
+
+  // 2. FTS5 가상 테이블 및 트리거 생성 (기존 로직)
   sqlite.run(`
     CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
       content,
@@ -16,7 +85,6 @@ export async function initDb() {
     );
   `);
 
-  // 트리거 생성: messages 테이블에 데이터가 들어오면 자동으로 fts 테이블에도 업데이트
   sqlite.run(`
     CREATE TRIGGER IF NOT EXISTS messages_after_insert AFTER INSERT ON messages BEGIN
       INSERT INTO messages_fts(rowid, content) VALUES (new.rowid, new.content);
@@ -35,5 +103,5 @@ export async function initDb() {
     END;
   `);
 
-  console.log('Database and FTS5 triggers initialized.');
+  console.log('Database, tables, and FTS5 triggers initialized.');
 }

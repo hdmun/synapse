@@ -1,5 +1,5 @@
 import Fastify from 'fastify';
-import socketio from 'socket.io';
+import { Server } from 'socket.io';
 import cors from '@fastify/cors';
 import { initDb, db } from './db';
 import { Syncer } from './services/syncer';
@@ -10,9 +10,12 @@ import path from 'path';
 
 const fastify = Fastify({ logger: true });
 const targetDir = process.env.GEMINI_TMP_DIR || path.join(process.env.USERPROFILE || '', '.gemini', 'tmp');
+console.log('--------------------------------------------------');
+console.log(`[DEBUG] Monitoring Gemini TMP: ${targetDir}`);
+console.log('--------------------------------------------------');
 
 // 1. Socket.io 서버 설정
-const io = new socketio.Server(fastify.server, {
+const io = new Server(fastify.server, {
   cors: { origin: '*' }
 });
 

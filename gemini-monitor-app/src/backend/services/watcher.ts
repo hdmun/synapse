@@ -15,9 +15,9 @@ export class Watcher {
     console.log(`Watching directory: ${targetDir}`);
     
     this.watcher = chokidar.watch(targetDir, {
-      ignored: /(^|[\/\\])\../, // 숨김 파일 무시
+      ignored: /(^|[\/\\])\../,
       persistent: true,
-      ignoreInitial: false, // 초기 로드 시에도 동기화 수행
+      ignoreInitial: false,
     });
 
     this.watcher
@@ -32,12 +32,13 @@ export class Watcher {
 
     // 1. 세션 JSON 파일 처리 (chats/session-*.json)
     if (ext === '.json' && fileName.startsWith('session-')) {
+      console.log(`[DEBUG] Session file detected: ${filePath}`);
       this.debounce(filePath, () => this.syncer.syncSessionFile(filePath));
     }
 
     // 2. 계획서 MD 파일 처리 (세션ID/plans/*.md)
     if (ext === '.md' && filePath.includes('plans')) {
-      // 경로 구조에서 sessionId 추출 (예: .../tmp/project/sessionId/plans/plan.md)
+      console.log(`[DEBUG] Plan file detected: ${filePath}`);
       const parts = filePath.split(path.sep);
       const plansIndex = parts.indexOf('plans');
       if (plansIndex > 0) {
@@ -54,7 +55,7 @@ export class Watcher {
     const timer = setTimeout(() => {
       fn();
       this.debounceMap.delete(key);
-    }, 300); // 300ms 디바운싱
+    }, 300);
     this.debounceMap.set(key, timer);
   }
 
