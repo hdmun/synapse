@@ -2,7 +2,10 @@ import { Database } from 'bun:sqlite';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import * as schema from './schema';
 
-const sqlite = new Database('gemini-monitor.db');
+const isTest = process.env.NODE_ENV === 'test';
+const dbPath = isTest ? ':memory:' : (process.env.DATABASE_URL || 'gemini-monitor.db');
+
+const sqlite = new Database(dbPath);
 export const db = drizzle(sqlite, { schema });
 
 export async function initDb() {
@@ -103,5 +106,9 @@ export async function initDb() {
     END;
   `);
 
-  console.log('Database, tables, and FTS5 triggers initialized.');
+  if (isTest) {
+    console.log('In-memory database initialized for testing.');
+  } else {
+    console.log(`Database initialized at: ${dbPath}`);
+  }
 }
