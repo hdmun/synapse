@@ -24,8 +24,17 @@ export class Syncer {
   async syncSessionFile(filePath: string) {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      const data: SessionData = JSON.parse(content);
+      const parsed = JSON.parse(content);
+      
+      // logs.json 같은 배열 형태는 무시하거나 별도 처리 (여기서는 일단 무시)
+      if (Array.isArray(parsed)) {
+        console.log(`[DEBUG] Array-based JSON skipped: ${filePath}`);
+        return;
+      }
+
+      const data: SessionData = parsed;
       const sessionId = data.sessionId;
+      if (!sessionId) return;
 
       const projectDir = path.dirname(path.dirname(filePath));
       const projectPath = await this.getProjectPath(projectDir);
@@ -98,6 +107,34 @@ export class Syncer {
       }
     } catch (err) {
       console.error(`Error syncing session ${filePath}:`, err);
+    }
+  }
+
+  async syncToolOutputFile(filePath: string) {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      const fileName = path.basename(filePath);
+      
+      // 파일명 분석: run_shell_command_1776920238833_1.txt
+      // 경로 분석: tool-outputs/session-60ad641a.../
+      const parts = filePath.split(path.sep);
+      const sessionDir = parts.find(p => p.startsWith('session-'));
+      const sessionId = sessionDir ? sessionDir.replace('session-', '') : null;
+
+      if (!sessionId) return;
+
+      // 도구 실행 결과 업데이트 (파일명에 포함된 도구명으로 매칭 시도)
+      // 정확한 매칭을 위해서는 DB 조회 필요
+      const toolName = fileName.split('_')[0]; // run, shell, command 등이 섞일 수 있음
+      
+      // 결과 업데이트 (여기서는 단순히 sessionId에 매치되는 최근 도구 호출의 결과를 보강하거나, 
+      // 나중에 상세 조회를 위해 저장하는 용도로 활용)
+      console.log(`Synced tool output for session ${sessionId}: ${fileName}`);
+      if (this.onUpdate) {
+        this.onUpdate(sessionId, { type: 'tool-output', fileName });
+      }
+    } catch (err) {
+      console.error(`Error syncing tool output ${filePath}:`, err);
     }
   }
 

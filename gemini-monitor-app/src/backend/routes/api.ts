@@ -1,9 +1,11 @@
-import { FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { db } from '../db';
 import { projects, sessions, messages, thoughts, toolCalls } from '../db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 
-export async function apiRoutes(fastify: FastifyInstance) {
+export default async function apiRoutes(fastify: FastifyInstance) {
+  // ... (기존 라우트들 생략되지 않도록 전체 교체 또는 정확한 부분 교체 필요)
+
   // 1. 모든 프로젝트 조회
   fastify.get('/api/projects', async () => {
     return await db.select().from(projects).orderBy(desc(projects.lastUpdated));
@@ -40,8 +42,8 @@ export async function apiRoutes(fastify: FastifyInstance) {
     const { q } = request.query as { q: string };
     if (!q) return [];
 
-    const results = await db.execute(sql`
-      SELECT m.*, s.projectId 
+    const results = await db.all(sql`
+      SELECT m.*, s.project_id as projectId 
       FROM messages m
       JOIN messages_fts f ON m.rowid = f.rowid
       JOIN sessions s ON m.session_id = s.id

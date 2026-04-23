@@ -57,7 +57,7 @@ describe("Syncer Service", () => {
 
     const sessionResults = await db.select().from(sessions).where(eq(sessions.id, sessionId));
     expect(sessionResults.length).toBe(1);
-    expect(sessionResults[0].model).toBe("gemini-pro");
+    expect(sessionResults[0]!.model).toBe("gemini-pro");
 
     const messageResults = await db.select().from(messages).where(eq(messages.sessionId, sessionId));
     expect(messageResults.length).toBe(2);

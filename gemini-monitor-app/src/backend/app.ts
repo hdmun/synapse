@@ -1,7 +1,8 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { Server } from 'socket.io';
 import cors from '@fastify/cors';
-import { apiRoutes } from './routes/api';
+import apiRoutes from './routes/api';
 import { Syncer } from './services/syncer';
 import { Watcher } from './services/watcher';
 import { initDb } from './db';
