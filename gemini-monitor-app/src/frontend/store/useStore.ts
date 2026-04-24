@@ -1,28 +1,5 @@
 import { create } from 'zustand';
-
-interface Project {
-  id: string;
-  name: string;
-  path: string;
-  progress: number;
-}
-
-interface Session {
-  id: string;
-  projectId: string;
-  status: string;
-  model: string;
-  lastUpdated: string;
-}
-
-interface Message {
-  id: string;
-  type: string;
-  content: string;
-  timestamp: string;
-  thoughts?: any[];
-  toolCalls?: any[];
-}
+import { Project, Session, Message, SocketUpdatePayload } from '../../shared/types';
 
 interface AppState {
   projects: Project[];
@@ -31,6 +8,10 @@ interface AppState {
   currentProject: Project | null;
   currentSession: Session | null;
   searchQuery: string;
+  
+  // 상태 관리
+  loading: boolean;
+  error: string | null;
 
   setProjects: (projects: Project[]) => void;
   setSessions: (sessions: Session[]) => void;
@@ -38,6 +19,11 @@ interface AppState {
   setCurrentProject: (project: Project | null) => void;
   setCurrentSession: (session: Session | null) => void;
   setSearchQuery: (query: string) => void;
+
+  // Delta Updates
+  addMessage: (sessionId: string, message: Message) => void;
+  updateProject: (project: Partial<Project> & { id: string }) => void;
+  updateSession: (session: Partial<Session> & { id: string }) => void;
 
   // 비동기 액션
   fetchProjects: () => Promise<void>;
@@ -52,6 +38,8 @@ export const useStore = create<AppState>((set, get) => ({
   currentProject: null,
   currentSession: null,
   searchQuery: '',
+  loading: false,
+  error: null,
 
   setProjects: (projects) => set({ projects }),
   setSessions: (sessions) => set({ sessions }),
@@ -60,21 +48,60 @@ export const useStore = create<AppState>((set, get) => ({
   setCurrentSession: (currentSession) => set({ currentSession }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
 
+  addMessage: (sessionId, message) => set((state) => {
+    if (state.currentSession?.id === sessionId) {
+      // 중복 방지 로직 (ID 기준)
+      const exists = state.messages.some(m => m.id === message.id);
+      if (exists) return state;
+      
+      return { messages: [...state.messages, message] };
+    }
+    return state;
+  }),
+
+  updateProject: (updatedProject) => set((state) => ({
+    projects: state.projects.map(p => p.id === updatedProject.id ? { ...p, ...updatedProject } : p),
+    currentProject: state.currentProject?.id === updatedProject.id ? { ...state.currentProject, ...updatedProject } : state.currentProject
+  })),
+
+  updateSession: (updatedSession) => set((state) => ({
+    sessions: state.sessions.map(s => s.id === updatedSession.id ? { ...s, ...updatedSession } : s),
+    currentSession: state.currentSession?.id === updatedSession.id ? { ...state.currentSession, ...updatedSession } : state.currentSession
+  })),
+
   fetchProjects: async () => {
-    const res = await fetch('/api/projects');
-    const data = await res.json();
-    set({ projects: data });
+    set({ loading: true, error: null });
+    try {
+      const res = await fetch('/api/projects');
+      if (!res.ok) throw new Error('Failed to fetch projects');
+      const data = await res.json();
+      set({ projects: data, loading: false });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+    }
   },
 
   fetchSessions: async (projectId: string) => {
-    const res = await fetch(`/api/projects/${projectId}/sessions`);
-    const data = await res.json();
-    set({ sessions: data });
+    set({ loading: true, error: null });
+    try {
+      const res = await fetch(`/api/projects/${projectId}/sessions`);
+      if (!res.ok) throw new Error('Failed to fetch sessions');
+      const data = await res.json();
+      set({ sessions: data, loading: false });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+    }
   },
 
   fetchMessages: async (sessionId: string) => {
-    const res = await fetch(`/api/sessions/${sessionId}`);
-    const data = await res.json();
-    set({ messages: data });
+    set({ loading: true, error: null });
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`);
+      if (!res.ok) throw new Error('Failed to fetch messages');
+      const data = await res.json();
+      set({ messages: data, loading: false });
+    } catch (err: any) {
+      set({ error: err.message, loading: false });
+    }
   },
 }));

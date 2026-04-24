@@ -45,3 +45,14 @@ export interface ToolCall {
   status: string;
   timestamp: string;
 }
+
+export type SocketUpdateType = 'message' | 'progress' | 'status' | 'sync';
+
+export interface SocketUpdatePayload {
+  type: SocketUpdateType;
+  sessionId: string;
+  projectId?: string;
+  message?: Message;
+  progress?: number;
+  status?: string;
+}
