@@ -43,8 +43,8 @@ describe('App Component', () => {
     expect(screen.getByText('Projects')).toBeInTheDocument();
   });
 
-  it('renders "Select a project and session" when no session is selected', () => {
+  it('renders "Select a project and session" when no session is selected', async () => {
     render(<App />);
-    expect(screen.getByText('Select a project and session to start monitoring')).toBeInTheDocument();
+    expect(await screen.findByText('Select a project and session to start monitoring')).toBeInTheDocument();
   });
 });

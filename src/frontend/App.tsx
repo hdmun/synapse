@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { useStore } from './store/useStore';
 import { io } from 'socket.io-client';
 import { ProjectList } from './components/ProjectList';
 import { SessionList } from './components/SessionList';
-import { MessageViewer } from './components/MessageViewer';
 import type { SocketUpdatePayload } from '../shared/types';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Activity } from 'lucide-react';
+
+const MessageViewer = lazy(() => import('./components/MessageViewer').then(m => ({ default: m.MessageViewer })));
 
 export const App = () => {
   const fetchProjects = useStore(state => state.fetchProjects);
@@ -74,7 +75,9 @@ export const App = () => {
 
       <ProjectList />
       <SessionList />
-      <MessageViewer />
+      <Suspense fallback={<div className="flex-1 flex flex-col items-center justify-center bg-gray-950 text-gray-600 space-y-4"><Activity size={48} className="opacity-20 animate-spin" /><p className="text-sm">Loading Viewer...</p></div>}>
+        <MessageViewer />
+      </Suspense>
     </div>
   );
 };
