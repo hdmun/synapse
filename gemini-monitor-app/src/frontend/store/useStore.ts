@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Project, Session, Message, SocketUpdatePayload } from '../../shared/types';
+import type { Project, Session, Message } from '../../shared/types';
 
 interface AppState {
   projects: Project[];

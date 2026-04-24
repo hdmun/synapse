@@ -56,3 +56,6 @@ export interface SocketUpdatePayload {
   progress?: number;
   status?: string;
 }
+
+// 런타임 모듈 인식 및 ESM 호환성을 위한 상수
+export const TYPES_VERSION = '1.0.0';

@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { ProjectList } from './components/ProjectList';
 import { SessionList } from './components/SessionList';
 import { MessageViewer } from './components/MessageViewer';
-import { SocketUpdatePayload } from '../shared/types';
+import type { SocketUpdatePayload } from '../shared/types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App = () => {
