@@ -39,7 +39,7 @@ describe('MessageViewer', () => {
     });
 
     render(<MessageViewer />);
-    expect(screen.getByText('Session: s1...')).toBeInTheDocument();
+    expect(screen.getByText('#S1')).toBeInTheDocument();
     expect(screen.getByText('Hello World')).toBeInTheDocument();
   });
 });

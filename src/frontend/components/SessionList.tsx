@@ -1,6 +1,5 @@
 import React, { memo, useRef } from 'react';
 import { useStore } from '../store/useStore';
-import { MessageSquare } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
@@ -14,17 +13,21 @@ export const SessionList = memo(() => {
   const rowVirtualizer = useVirtualizer({
     count: sessions.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 64,
+    estimateSize: () => 90,
     overscan: 5,
   });
 
   return (
-    <div className="w-72 border-r border-gray-800 flex flex-col bg-gray-900/30">
-      <div className="p-4 border-b border-gray-800 flex items-center gap-2">
-        <MessageSquare size={20} className="text-emerald-400" />
-        <h2 className="font-bold">Sessions</h2>
+    <div className="w-80 border-r border-slate-800/50 flex flex-col bg-slate-900/30">
+      <div className="p-6 border-b border-slate-800/50 flex justify-between items-center">
+        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
+        {sessions.length > 0 && (
+          <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+            {sessions.filter(s => s.status === 'active').length} Active
+          </span>
+        )}
       </div>
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-2">
+      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2">
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -34,6 +37,7 @@ export const SessionList = memo(() => {
         >
           {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const s = sessions[virtualItem.index];
+            const isActive = currentSession?.id === s.id;
             return (
               <div
                 key={virtualItem.key}
@@ -42,20 +46,31 @@ export const SessionList = memo(() => {
                 className="absolute top-0 left-0 w-full"
                 style={{
                   transform: `translateY(${virtualItem.start}px)`,
-                  paddingBottom: '4px'
+                  paddingBottom: '8px'
                 }}
               >
                 <button
                   onClick={() => { setCurrentSession(s); fetchMessages(s.id); }}
-                  className={`w-full text-left p-3 rounded-lg transition ${currentSession?.id === s.id ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/50' : 'hover:bg-gray-800 text-gray-400'}`}
+                  className={`w-full text-left p-4 rounded-xl border transition-all ${
+                    isActive 
+                    ? 'bg-indigo-600/10 border-indigo-500/50' 
+                    : 'bg-transparent border-transparent hover:bg-slate-800/30 hover:border-slate-800/50'
+                  }`}
                 >
-                  <div className="flex justify-between items-start">
-                    <span className="font-medium text-sm truncate">{s.id.slice(0, 8)}...</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${s.status === 'active' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-700 text-gray-300'}`}>
-                      {s.status}
+                  <div className="flex justify-between items-start mb-1">
+                    <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
+                      #{s.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
+                      s.status === 'active' 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-slate-800 text-slate-500'
+                    }`}>
+                      {s.status.toUpperCase()}
                     </span>
                   </div>
-                  <div className="text-xs opacity-60 mt-1">{s.model}</div>
+                  <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model {s.model}</div>
+                  <div className="text-[10px] text-slate-600 mt-2">Recently updated</div>
                 </button>
               </div>
             );

@@ -16,7 +16,7 @@ describe('ProjectList', () => {
 
   it('renders project list correctly', () => {
     render(<ProjectList />);
-    expect(screen.getByText('Projects')).toBeInTheDocument();
+    expect(screen.getByText('Active Projects')).toBeInTheDocument();
     expect(screen.getByText('Test Project')).toBeInTheDocument();
     expect(screen.getByText('/test/path')).toBeInTheDocument();
   });

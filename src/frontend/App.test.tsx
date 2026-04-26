@@ -38,9 +38,9 @@ describe('App Component', () => {
     (useStore as any).mockImplementation((selector: any) => selector(mockState));
   });
 
-  it('renders "Projects" header via ProjectList', () => {
+  it('renders "Gemini Monitor" title', () => {
     render(<App />);
-    expect(screen.getByText('Projects')).toBeInTheDocument();
+    expect(screen.getByText('Gemini Monitor')).toBeInTheDocument();
   });
 
   it('renders "Select a project and session" when no session is selected', async () => {

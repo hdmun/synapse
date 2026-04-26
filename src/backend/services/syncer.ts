@@ -73,7 +73,12 @@ export class Syncer {
           inputTokens: msg.tokens?.input,
           outputTokens: msg.tokens?.output,
           thoughtTokens: msg.tokens?.thoughts,
-        }).onConflictDoNothing();
+        }).onConflictDoUpdate({
+          target: messages.id,
+          set: {
+            content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+          }
+        });
 
         if (msg.thoughts && Array.isArray(msg.thoughts)) {
           for (const thought of msg.thoughts) {

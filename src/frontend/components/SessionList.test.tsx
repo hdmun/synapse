@@ -16,15 +16,15 @@ describe('SessionList', () => {
 
   it('renders session list correctly', () => {
     render(<SessionList />);
-    expect(screen.getByText('Sessions')).toBeInTheDocument();
-    expect(screen.getByText('s1-very-...')).toBeInTheDocument(); // id.slice(0, 8)
-    expect(screen.getByText('active')).toBeInTheDocument();
-    expect(screen.getByText('gemini-1.5')).toBeInTheDocument();
+    expect(screen.getByText('Chat Sessions')).toBeInTheDocument();
+    expect(screen.getByText('#S1-VERY-')).toBeInTheDocument(); // id.slice(0, 8).toUpperCase()
+    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
+    expect(screen.getByText(/Model gemini-1\.5/)).toBeInTheDocument();
   });
 
   it('handles session selection', () => {
     render(<SessionList />);
-    const button = screen.getByText('s1-very-...').closest('button');
+    const button = screen.getByText('#S1-VERY-').closest('button');
     if (button) fireEvent.click(button);
 
     const state = useStore.getState();
