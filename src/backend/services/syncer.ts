@@ -21,12 +21,57 @@ export class Syncer {
     this.onUpdate = onUpdate;
   }
 
+  private extractSummary(messages: any[]): string | undefined {
+    const firstMsg = messages.find(m => m.type !== 'info');
+    if (!firstMsg) return undefined;
+
+    let content = firstMsg.content;
+    
+    const findText = (obj: any): string | null => {
+      if (!obj) return null;
+      if (typeof obj === 'string') return obj;
+      if (obj.text && typeof obj.text === 'string') return obj.text;
+      if (obj.content && typeof obj.content === 'string') return obj.content;
+      if (Array.isArray(obj.parts)) {
+        for (const part of obj.parts) {
+          const t = findText(part);
+          if (t) return t;
+        }
+      }
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          const t = findText(item);
+          if (t) return t;
+        }
+      }
+      if (typeof obj === 'object') {
+        return obj.text || obj.content || null;
+      }
+      return null;
+    };
+
+    let text: string | null = null;
+    try {
+      if (typeof content === 'string' && (content.trim().startsWith('{') || content.trim().startsWith('['))) {
+        text = findText(JSON.parse(content));
+      } else {
+        text = findText(content);
+      }
+    } catch (e) {
+      text = typeof content === 'string' ? content : JSON.stringify(content);
+    }
+
+    if (!text) text = typeof content === 'string' ? content : JSON.stringify(content);
+
+    const plainText = String(text).replace(/\s+/g, ' ').trim();
+    return plainText.length > 80 ? plainText.slice(0, 80) + '...' : plainText;
+  }
+
   async syncSessionFile(filePath: string) {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const parsed = JSON.parse(content);
       
-      // logs.json 같은 배열 형태는 무시하거나 별도 처리 (여기서는 일단 무시)
       if (Array.isArray(parsed)) {
         console.log(`[DEBUG] Array-based JSON skipped: ${filePath}`);
         return;
@@ -39,6 +84,7 @@ export class Syncer {
       const projectDir = path.dirname(path.dirname(filePath));
       const projectPath = await this.getProjectPath(projectDir);
       const projectId = data.projectHash || path.basename(projectDir);
+      const summary = this.extractSummary(data.messages);
 
       await db.insert(projects).values({
         id: projectId,
@@ -56,9 +102,13 @@ export class Syncer {
         startTime: new Date(data.startTime),
         lastUpdated: new Date(data.lastUpdated),
         model: data.messages.find(m => m.model)?.model || 'unknown',
+        summary,
       }).onConflictDoUpdate({
         target: sessions.id,
-        set: { lastUpdated: new Date(data.lastUpdated) }
+        set: { 
+          lastUpdated: new Date(data.lastUpdated),
+          summary,
+        }
       });
 
       for (const msg of data.messages) {
@@ -119,21 +169,12 @@ export class Syncer {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const fileName = path.basename(filePath);
-      
-      // 파일명 분석: run_shell_command_1776920238833_1.txt
-      // 경로 분석: tool-outputs/session-60ad641a.../
       const parts = filePath.split(path.sep);
       const sessionDir = parts.find(p => p.startsWith('session-'));
       const sessionId = sessionDir ? sessionDir.replace('session-', '') : null;
 
       if (!sessionId) return;
 
-      // 도구 실행 결과 업데이트 (파일명에 포함된 도구명으로 매칭 시도)
-      // 정확한 매칭을 위해서는 DB 조회 필요
-      const toolName = fileName.split('_')[0]; // run, shell, command 등이 섞일 수 있음
-      
-      // 결과 업데이트 (여기서는 단순히 sessionId에 매치되는 최근 도구 호출의 결과를 보강하거나, 
-      // 나중에 상세 조회를 위해 저장하는 용도로 활용)
       console.log(`Synced tool output for session ${sessionId}: ${fileName}`);
       if (this.onUpdate) {
         this.onUpdate(sessionId, { type: 'tool-output', fileName });

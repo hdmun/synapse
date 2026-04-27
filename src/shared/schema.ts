@@ -15,6 +15,7 @@ export const sessionSchema = z.object({
   model: z.string(),
   startTime: z.string(),
   lastUpdated: z.string(),
+  summary: z.string().optional(),
 });
 
 export const messageSchema = z.object({

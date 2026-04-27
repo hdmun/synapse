@@ -18,6 +18,7 @@ export const sessions = sqliteTable('sessions', {
   lastUpdated: integer('last_updated', { mode: 'timestamp' }).notNull(),
   status: text('status', { enum: ['active', 'success', 'error', 'cancelled'] }).default('active'),
   model: text('model'),
+  summary: text('summary'),
   totalTokens: integer('total_tokens').default(0),
 });
 

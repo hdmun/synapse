@@ -13,7 +13,7 @@ export const SessionList = memo(() => {
   const rowVirtualizer = useVirtualizer({
     count: sessions.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 90,
+    estimateSize: () => 110,
     overscan: 5,
   });
 
@@ -70,6 +70,11 @@ export const SessionList = memo(() => {
                     </span>
                   </div>
                   <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model {s.model}</div>
+                  {s.summary && (
+                    <div className={`text-[11px] font-medium truncate mt-2 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`} title={s.summary}>
+                      {s.summary}
+                    </div>
+                  )}
                   <div className="text-[10px] text-slate-600 mt-2">Recently updated</div>
                 </button>
               </div>

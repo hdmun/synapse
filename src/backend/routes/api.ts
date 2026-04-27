@@ -14,9 +14,67 @@ export default async function apiRoutes(fastify: FastifyInstance) {
   // 2. 특정 프로젝트의 세션 목록 조회
   fastify.get('/api/projects/:id/sessions', async (request) => {
     const { id } = request.params as { id: string };
-    return await db.select().from(sessions)
+    const sessionList = await db.select().from(sessions)
       .where(eq(sessions.projectId, id))
       .orderBy(desc(sessions.lastUpdated));
+      
+    const sessionsWithSummary = await Promise.all(sessionList.map(async (s) => {
+      // DB에 이미 요약이 있고 JSON 형식이 아니면 그대로 사용
+      if (s.summary && !s.summary.trim().startsWith('{') && !s.summary.trim().startsWith('[')) {
+        return s;
+      }
+
+      // DB에 요약이 없거나 잘못된 형식(JSON)인 경우 실시간 추출 시도
+      const firstMsg = await db.select().from(messages)
+        .where(eq(messages.sessionId, s.id))
+        .orderBy(messages.timestamp)
+        .limit(1);
+        
+      let summary = s.summary;
+      if (firstMsg.length > 0) {
+        const content = firstMsg[0].content;
+        
+        const findText = (obj: any): string | null => {
+          if (!obj) return null;
+          if (typeof obj === 'string') return obj;
+          if (obj.text && typeof obj.text === 'string') return obj.text;
+          if (obj.content && typeof obj.content === 'string') return obj.content;
+          if (Array.isArray(obj.parts)) {
+            for (const part of obj.parts) {
+              const t = findText(part);
+              if (t) return t;
+            }
+          }
+          if (Array.isArray(obj)) {
+            for (const item of obj) {
+              const t = findText(item);
+              if (t) return t;
+            }
+          }
+          return obj.text || obj.content || null;
+        };
+
+        let text: string | null = null;
+        try {
+          if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+            text = findText(JSON.parse(content));
+          } else {
+            text = content;
+          }
+        } catch (e) {}
+
+        if (!text) text = content;
+        
+        summary = String(text).replace(/\s+/g, ' ').trim();
+        if (summary.length > 80) summary = summary.slice(0, 80) + '...';
+        
+        // DB 업데이트
+        await db.update(sessions).set({ summary }).where(eq(sessions.id, s.id));
+      }
+      return { ...s, summary };
+    }));
+    
+    return sessionsWithSummary;
   });
 
   // 3. 특정 세션의 메시지 상세 조회 (Thoughts, ToolCalls 포함)

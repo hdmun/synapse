@@ -29,9 +29,17 @@ export async function initDb() {
       last_updated INTEGER NOT NULL,
       status TEXT DEFAULT 'active',
       model TEXT,
+      summary TEXT,
       total_tokens INTEGER DEFAULT 0
     );
   `);
+
+  // summary 컬럼이 없을 경우 추가 (기존 DB 대응)
+  try {
+    sqlite.run("ALTER TABLE sessions ADD COLUMN summary TEXT;");
+  } catch (e) {
+    // 이미 존재할 경우 무시
+  }
 
   sqlite.run(`
     CREATE TABLE IF NOT EXISTS messages (
