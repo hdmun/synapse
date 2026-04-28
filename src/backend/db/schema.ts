@@ -1,4 +1,5 @@
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { relations } from 'drizzle-orm';
 
 // 1. Projects 테이블
 export const projects = sqliteTable('projects', {
@@ -9,6 +10,11 @@ export const projects = sqliteTable('projects', {
   progress: real('progress').default(0), // Plan 기반 진행률 (0~100)
   lastUpdated: integer('last_updated', { mode: 'timestamp' }).notNull(),
 });
+
+export const projectsRelations = relations(projects, ({ many }) => ({
+  sessions: many(sessions),
+  plans: many(plans),
+}));
 
 // 2. Sessions 테이블
 export const sessions = sqliteTable('sessions', {
@@ -21,6 +27,15 @@ export const sessions = sqliteTable('sessions', {
   summary: text('summary'),
   totalTokens: integer('total_tokens').default(0),
 });
+
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [sessions.projectId],
+    references: [projects.id],
+  }),
+  messages: many(messages),
+  plans: many(plans),
+}));
 
 // 3. Messages 테이블 (FTS5 연동 대상)
 export const messages = sqliteTable('messages', {
@@ -35,6 +50,15 @@ export const messages = sqliteTable('messages', {
   thoughtTokens: integer('thought_tokens'),
 });
 
+export const messagesRelations = relations(messages, ({ one, many }) => ({
+  session: one(sessions, {
+    fields: [messages.sessionId],
+    references: [sessions.id],
+  }),
+  thoughts: many(thoughts),
+  toolCalls: many(toolCalls),
+}));
+
 // 4. Thoughts 테이블 (Gemini 내부 사고 과정)
 export const thoughts = sqliteTable('thoughts', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -43,6 +67,13 @@ export const thoughts = sqliteTable('thoughts', {
   description: text('description').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
 });
+
+export const thoughtsRelations = relations(thoughts, ({ one }) => ({
+  message: one(messages, {
+    fields: [thoughts.messageId],
+    references: [messages.id],
+  }),
+}));
 
 // 5. ToolCalls 테이블
 export const toolCalls = sqliteTable('tool_calls', {
@@ -55,6 +86,13 @@ export const toolCalls = sqliteTable('tool_calls', {
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
 });
 
+export const toolCallsRelations = relations(toolCalls, ({ one }) => ({
+  message: one(messages, {
+    fields: [toolCalls.messageId],
+    references: [messages.id],
+  }),
+}));
+
 // 6. Plans 테이블 (체크리스트 추적용)
 export const plans = sqliteTable('plans', {
   id: text('id').primaryKey(), // plan file path or hash
@@ -65,3 +103,14 @@ export const plans = sqliteTable('plans', {
   completedTasks: integer('completed_tasks').default(0),
   lastUpdated: integer('last_updated', { mode: 'timestamp' }).notNull(),
 });
+
+export const plansRelations = relations(plans, ({ one }) => ({
+  session: one(sessions, {
+    fields: [plans.sessionId],
+    references: [sessions.id],
+  }),
+  project: one(projects, {
+    fields: [plans.projectId],
+    references: [projects.id],
+  }),
+}));

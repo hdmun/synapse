@@ -11,6 +11,7 @@ export interface Session {
   projectId: string;
   status?: string;
   model: string;
+  summary?: string;
   startTime: string;
   lastUpdated: string;
 }

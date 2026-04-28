@@ -1,11 +1,11 @@
 import Fastify from 'fastify';
-import type { FastifyInstance } from 'fastify';
-import { Server } from 'socket.io';
 import cors from '@fastify/cors';
+import { socketPlugin } from './plugins/socket';
 import apiRoutes from './routes/api';
 import { Syncer } from './services/syncer';
 import { Watcher } from './services/watcher';
 import { initDb } from './db';
+import { AppError } from './utils/errors';
 
 export interface AppConfig {
   targetDir: string;
@@ -15,33 +15,57 @@ export interface AppConfig {
 export async function buildApp(config: AppConfig) {
   const fastify = Fastify({ logger: !config.isTest });
   
-  // 1. Socket.io 서버 설정
-  const io = new Server(fastify.server, {
-    cors: { origin: '*' }
-  });
-
+  // Register Socket.io plugin
+  await fastify.register(socketPlugin as any, { socketOptions: { cors: { origin: '*' } } });
+  
   await fastify.register(cors);
   await fastify.register(apiRoutes);
 
-  // 2. 서비스 초기화
+  // Global Error Handler
+  fastify.setErrorHandler((error: any, request, reply) => {
+    if (error instanceof AppError) {
+      fastify.log.warn({ err: error }, 'Operational error');
+      return reply.status(error.statusCode).send({
+        error: error.name,
+        message: error.message
+      });
+    }
+
+    if (error.validation) {
+      fastify.log.warn({ err: error }, 'Validation error');
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: error.message,
+        details: error.validation
+      });
+    }
+
+    // Default error handler
+    fastify.log.error({ err: error }, 'Unhandled error');
+    reply.status(500).send({
+      error: 'Internal Server Error',
+      message: config.isTest ? error.message : 'Something went wrong'
+    });
+  });
+
+  // DB initialization
+  await initDb();
+
+  // Service initialization
   const syncer = new Syncer(config.targetDir, (sessionId, data) => {
-    io.emit('session-update', { sessionId, ...data });
+    fastify.io.emit('session-update', { sessionId, ...data });
   });
   const watcher = new Watcher(syncer);
 
-  // DB 초기화
-  await initDb();
-
-  // Socket.io 연결 로그 (테스트 환경이 아닐 때만)
   if (!config.isTest) {
-    io.on('connection', (socket) => {
+    fastify.io.on('connection', (socket) => {
       console.log('Client connected:', socket.id);
     });
   }
 
   return {
     fastify,
-    io,
+    io: fastify.io, // Keep returning io for compatibility with tests
     syncer,
     watcher,
     start: () => {
