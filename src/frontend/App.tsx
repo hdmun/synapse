@@ -3,7 +3,7 @@ import { useStore } from './store/useStore';
 import { io } from 'socket.io-client';
 import { ProjectList } from './components/ProjectList';
 import { SessionList } from './components/SessionList';
-import type { SocketUpdatePayload } from '../shared/types';
+import type { SocketUpdatePayload } from '../shared/schema';
 import { AlertCircle, RefreshCw, Activity, User, Folder, MessageSquare, BarChart3, Archive, Cpu, Bell, Settings, Search } from 'lucide-react';
 
 const MessageViewer = lazy(() => import('./components/MessageViewer').then(m => ({ default: m.MessageViewer })));

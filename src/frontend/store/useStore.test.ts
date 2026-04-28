@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useStore } from './useStore';
-import type { Project, Session, Message } from '../../shared/types';
+import type { Project, Session, Message } from '../../shared/schema';
 
 const mockProject: Project = { id: 'p1', path: '/test', name: 'Test', progress: 0 };
-const mockSession: Session = { id: 's1', projectId: 'p1', timestamp: 123, status: 'active', model: 'gemini-1.5' };
-const mockMessage: Message = { id: 'm1', sessionId: 's1', type: 'user', content: 'hello', timestamp: 123 };
+const mockSession: Session = { id: 's1', projectId: 'p1', startTime: '2024-01-01T00:00:00Z', lastUpdated: '2024-01-01T00:00:00Z', status: 'active', model: 'gemini-1.5' };
+const mockMessage: Message = { id: 'm1', sessionId: 's1', type: 'user', content: 'hello', timestamp: '2024-01-01T00:00:01Z' };
 
 describe('useStore', () => {
   beforeEach(() => {
