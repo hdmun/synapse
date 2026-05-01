@@ -52,8 +52,8 @@ export class Watcher {
     const ext = path.extname(filePath);
     const fileName = path.basename(filePath);
 
-    // 1. JSON 데이터 처리 (chats/**/*.json 또는 logs.json)
-    if (ext === '.json') {
+    // 1. JSON 데이터 처리 (chats/**/*.json, chats/**/*.jsonl 또는 logs.json)
+    if (ext === '.json' || ext === '.jsonl') {
       if (filePath.includes('chats') || fileName === 'logs.json') {
         console.log(`[DEBUG] JSON data detected: ${filePath}`);
         this.debounce(filePath, () => this.syncer.syncSessionFile(filePath));

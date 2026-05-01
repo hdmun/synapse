@@ -25,14 +25,44 @@ export class Syncer {
   async syncSessionFile(filePath: string) {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      const parsed = JSON.parse(content);
-      
-      if (Array.isArray(parsed)) {
-        console.log(`[DEBUG] Array-based JSON skipped: ${filePath}`);
-        return;
+      let data: SessionData;
+
+      if (filePath.endsWith('.jsonl')) {
+        const lines = content.split('\n').filter(line => line.trim().length > 0);
+        if (lines.length === 0) return;
+        
+        const firstLine = lines[0];
+        if (!firstLine) return;
+
+        data = JSON.parse(firstLine) as SessionData;
+        data.messages = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const lineStr = lines[i];
+          if (!lineStr) continue;
+          try {
+            const lineData = JSON.parse(lineStr);
+            if (lineData.$set) {
+              if (lineData.$set.lastUpdated) {
+                data.lastUpdated = lineData.$set.lastUpdated;
+              }
+            } else if (lineData.id) {
+              data.messages.push(lineData);
+            }
+          } catch (e) {
+            // Ignore malformed lines in jsonl
+          }
+        }
+      } else {
+        const parsed = JSON.parse(content);
+        
+        if (Array.isArray(parsed)) {
+          console.log(`[DEBUG] Array-based JSON skipped: ${filePath}`);
+          return;
+        }
+        data = parsed;
       }
 
-      const data: SessionData = parsed;
       const sessionId = data.sessionId;
       if (!sessionId) return;
 
