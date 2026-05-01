@@ -19,11 +19,11 @@ export const ProjectList = memo(() => {
   });
 
   return (
-    <div className="w-80 border-r border-slate-800/50 flex flex-col bg-slate-900/50">
+    <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/50">
       <div className="p-6 border-b border-slate-800/50">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Active Projects</h3>
       </div>
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,

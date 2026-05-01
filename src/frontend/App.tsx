@@ -77,7 +77,7 @@ export const App = () => {
       <ThemeProvider>
         <SidebarProvider>
           <ClientLayout>
-            <div className="flex flex-col h-full relative">
+            <div className="flex-1 flex flex-col min-h-0 relative">
               {/* Status Bar */}
               {!isConnected && (
                 <div className="absolute top-0 left-0 w-full bg-amber-600/90 text-white text-[10px] py-1 text-center z-50 flex items-center justify-center gap-2">
@@ -125,7 +125,7 @@ export const App = () => {
                   </div>
               </header>
 
-              <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 flex min-h-0 overflow-hidden">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/projects" element={

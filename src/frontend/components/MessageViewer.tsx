@@ -56,7 +56,7 @@ export const MessageViewer = memo(() => {
 
       <main 
         ref={parentRef}
-        className="flex-1 overflow-y-auto p-8 relative"
+        className="flex-1 overflow-y-auto p-8 relative custom-scrollbar"
       >
         {!currentSession ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-4">

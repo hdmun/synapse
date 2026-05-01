@@ -7,7 +7,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { collapsed, setMobileOpen } = useSidebar()
   
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans flex flex-col">
+    <div className="h-screen bg-slate-950 text-slate-200 font-sans flex flex-col overflow-hidden">
       <Sidebar />
       <BottomNav />
       

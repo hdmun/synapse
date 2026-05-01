@@ -8,7 +8,39 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
+      html, body, #root {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+      }
+
       body { font-family: 'Inter', sans-serif; }
+
+      /* Custom Scrollbar Styles */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 8px !important;
+        display: block !important;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.1) !important; /* slate-900 with opacity */
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #475569 !important; /* slate-600 */
+        border-radius: 10px !important;
+        border: 2px solid transparent !important;
+        background-clip: content-box !important;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #6366f1 !important; /* indigo-500 */
+        background-clip: content-box !important;
+      }
+      
+      /* Firefox support */
+      .custom-scrollbar {
+        scrollbar-width: thin !important;
+        scrollbar-color: #475569 transparent !important;
+      }
   </style>
 </head>
 <body class="bg-gray-900 text-gray-100">

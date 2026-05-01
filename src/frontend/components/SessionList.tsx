@@ -18,7 +18,7 @@ export const SessionList = memo(() => {
   });
 
   return (
-    <div className="w-80 border-r border-slate-800/50 flex flex-col bg-slate-900/30">
+    <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
       <div className="p-6 border-b border-slate-800/50 flex justify-between items-center">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
         {sessions.length > 0 && (
@@ -27,7 +27,7 @@ export const SessionList = memo(() => {
           </span>
         )}
       </div>
-      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
         <div
           style={{
             height: `${rowVirtualizer.getTotalSize()}px`,
