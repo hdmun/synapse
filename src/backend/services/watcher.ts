@@ -1,7 +1,11 @@
 import * as chokidar from 'chokidar';
 import type { FSWatcher } from 'chokidar';
 import path from 'path';
+import fs from 'fs/promises';
 import { Syncer } from './syncer';
+import { db } from '../db';
+import { fileSyncMetadata } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export class Watcher {
   private watcher: FSWatcher | null = null;
@@ -39,13 +43,34 @@ export class Watcher {
     const glob = new (require('bun').Glob)(pattern);
     
     let count = 0;
+    let syncCount = 0;
     for await (const file of glob.scan({ cwd: targetDir, onlyFiles: true })) {
       count++;
       const filePath = path.join(targetDir, file as string);
-      console.log(`[DEBUG] Initial file found: ${filePath}`);
-      this.handleFileChange(filePath);
+      
+      try {
+        const stats = await fs.stat(filePath);
+        const metadata = await db.query.fileSyncMetadata.findFirst({
+          where: eq(fileSyncMetadata.path, filePath)
+        });
+
+        if (metadata && 
+            metadata.lastModifiedAt === stats.mtimeMs && 
+            metadata.fileSize === stats.size) {
+          // console.log(`[DEBUG] Skipping unchanged file: ${filePath}`);
+          continue;
+        }
+
+        syncCount++;
+        console.log(`[DEBUG] Initial file found (needs sync): ${filePath}`);
+        this.handleFileChange(filePath);
+      } catch (err) {
+        console.error(`Error checking metadata for ${filePath}:`, err);
+        // Fallback: sync anyway
+        this.handleFileChange(filePath);
+      }
     }
-    console.log(`Scanning complete. Found ${count} files.`);
+    console.log(`Scanning complete. Found ${count} files, synced ${syncCount} files.`);
   }
 
   private handleFileChange(filePath: string) {
@@ -95,5 +120,9 @@ export class Watcher {
     if (this.watcher) {
       this.watcher.close();
     }
+    for (const timer of this.debounceMap.values()) {
+      clearTimeout(timer);
+    }
+    this.debounceMap.clear();
   }
 }

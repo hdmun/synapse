@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../db';
-import { projects, sessions, messages, thoughts, toolCalls, plans } from '../db/schema';
+import { projects, sessions, messages, thoughts, toolCalls, plans, fileSyncMetadata } from '../db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { extractMessageSummary } from '../utils/message-utils';
 
@@ -149,6 +149,7 @@ export class Syncer {
       });
 
       console.log(`Synced session: ${sessionId}`);
+      await this.updateMetadata(filePath);
       if (this.onUpdate) {
         this.onUpdate(sessionId, { type: 'session' });
       }
@@ -168,6 +169,7 @@ export class Syncer {
       if (!sessionId) return;
 
       console.log(`Synced tool output for session ${sessionId}: ${fileName}`);
+      await this.updateMetadata(filePath);
       if (this.onUpdate) {
         this.onUpdate(sessionId, { type: 'tool-output', fileName });
       }
@@ -203,8 +205,28 @@ export class Syncer {
           if (this.onUpdate) this.onUpdate(sessionId, { type: 'plan', progress });
         }
       });
+      await this.updateMetadata(filePath);
     } catch (err) {
       console.error(`Error syncing plan ${filePath}:`, err);
+    }
+  }
+
+  private async updateMetadata(filePath: string) {
+    try {
+      const stats = await fs.stat(filePath);
+      await db.insert(fileSyncMetadata).values({
+        path: filePath,
+        lastModifiedAt: stats.mtimeMs,
+        fileSize: stats.size,
+      }).onConflictDoUpdate({
+        target: fileSyncMetadata.path,
+        set: {
+          lastModifiedAt: stats.mtimeMs,
+          fileSize: stats.size,
+        }
+      });
+    } catch (err) {
+      console.error(`Error updating metadata for ${filePath}:`, err);
     }
   }
 

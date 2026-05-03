@@ -114,3 +114,10 @@ export const plansRelations = relations(plans, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+// 7. FileSyncMetadata 테이블 (증분 동기화 최적화용)
+export const fileSyncMetadata = sqliteTable('file_sync_metadata', {
+  path: text('path').primaryKey(),
+  lastModifiedAt: integer('last_modified_at').notNull(), // ms 단위
+  fileSize: integer('file_size').notNull(),
+});
