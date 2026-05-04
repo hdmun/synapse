@@ -36,7 +36,9 @@ export const App = () => {
   const addMessage = useStore(state => state.addMessage);
   const updateProject = useStore(state => state.updateProject);
   const updateSession = useStore(state => state.updateSession);
-  const error = useStore(state => state.error);
+  
+  // 통합 에러 상태 감시
+  const error = useStore(state => state.projectsError || state.sessionsError || state.messagesError);
   
   const [isConnected, setIsConnected] = useState(false);
 

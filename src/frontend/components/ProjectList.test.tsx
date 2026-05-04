@@ -8,12 +8,16 @@ describe('ProjectList', () => {
   beforeEach(() => {
     useStore.setState({
       projectsById: {
-        'p1': { id: 'p1', name: 'Test Project', path: '/test/path', progress: 50 }
+        'p1': { id: 'p1', name: 'Test Project', path: '/test', progress: 50 }
       },
       projectIds: ['p1'],
       currentProject: null,
+      searchQuery: '',
+      projectsLoading: false,
+      projectsError: null,
       setCurrentProject: vi.fn(),
-      fetchSessions: vi.fn()
+      fetchSessions: vi.fn(),
+      fetchProjects: vi.fn()
     });
   });
 
@@ -21,7 +25,7 @@ describe('ProjectList', () => {
     render(<ProjectList />);
     expect(screen.getByText('Active Projects')).toBeInTheDocument();
     expect(screen.getByText('Test Project')).toBeInTheDocument();
-    expect(screen.getByText('/test/path')).toBeInTheDocument();
+    expect(screen.getByText(/Syncing\.\.\. 50%/)).toBeInTheDocument();
   });
 
   it('handles project selection', () => {

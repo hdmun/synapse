@@ -13,7 +13,9 @@ describe('useStore', () => {
       sessionsById: {}, sessionIds: [],
       messagesById: {}, messageIds: [],
       currentProject: null, currentSession: null, searchQuery: '',
-      loading: false, error: null
+      projectsLoading: false, projectsError: null,
+      sessionsLoading: false, sessionsError: null,
+      messagesLoading: false, messagesError: null
     });
   });
 
@@ -55,7 +57,7 @@ describe('useStore', () => {
 
     await useStore.getState().fetchProjects();
     expect(useStore.getState().projectIds).toEqual(['p1']);
-    expect(useStore.getState().loading).toBe(false);
+    expect(useStore.getState().projectsLoading).toBe(false);
   });
 
   it('handles fetchProjects failure', async () => {
@@ -64,7 +66,7 @@ describe('useStore', () => {
     }) as unknown as typeof fetch;
 
     await useStore.getState().fetchProjects();
-    expect(useStore.getState().error).toBe('Failed to fetch projects');
-    expect(useStore.getState().loading).toBe(false);
+    expect(useStore.getState().projectsError).toBe('Failed to fetch projects');
+    expect(useStore.getState().projectsLoading).toBe(false);
   });
 });

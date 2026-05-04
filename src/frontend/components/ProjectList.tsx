@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { FolderOpen } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { ProjectSkeleton, EmptyState, ErrorState } from './StatusStates';
 
 const ProjectListItem = memo(({ 
   id, 
@@ -67,7 +68,12 @@ const ProjectListItem = memo(({
 ProjectListItem.displayName = 'ProjectListItem';
 
 export const ProjectList = memo(() => {
-  const projectIds = useStore(useShallow(state => state.projectIds));
+  const projectIds = useStore(state => state.projectIds);
+  const loading = useStore(state => state.projectsLoading);
+  const error = useStore(state => state.projectsError);
+  const searchQuery = useStore(state => state.searchQuery);
+  const fetchProjects = useStore(state => state.fetchProjects);
+  
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -77,29 +83,51 @@ export const ProjectList = memo(() => {
     overscan: 5,
   });
 
+  const renderContent = () => {
+    if (loading && projectIds.length === 0) {
+      return <ProjectSkeleton />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={fetchProjects} />;
+    }
+
+    if (projectIds.length === 0) {
+      return searchQuery ? (
+        <EmptyState icon="search" title="검색 결과가 없습니다" description={`"${searchQuery}"에 해당하는 프로젝트를 찾을 수 없습니다.`} />
+      ) : (
+        <EmptyState icon="project" title="활성 프로젝트가 없습니다" description="서버에서 프로젝트를 동기화 중인지 확인하세요." />
+      );
+    }
+
+    return (
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+          <ProjectListItem 
+            key={virtualItem.key}
+            id={projectIds[virtualItem.index]!}
+            index={virtualItem.index}
+            start={virtualItem.start}
+            measureRef={rowVirtualizer.measureElement}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/50">
       <div className="p-6 border-b border-slate-800/50">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Active Projects</h3>
       </div>
       <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualItem) => (
-            <ProjectListItem 
-              key={virtualItem.key}
-              id={projectIds[virtualItem.index]!}
-              index={virtualItem.index}
-              start={virtualItem.start}
-              measureRef={rowVirtualizer.measureElement}
-            />
-          ))}
-        </div>
+        {renderContent()}
       </div>
     </div>
   );

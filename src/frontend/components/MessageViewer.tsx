@@ -3,6 +3,8 @@ import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, Zap, Terminal, Cpu, FileText, Image as ImageIcon, Copy, ExternalLink, ChevronDown, ChevronRight, File, Check } from 'lucide-react';
 
+import { EmptyState, ErrorState, MessageSkeleton } from './StatusStates';
+
 const MessageListItem = memo(({ 
   id, 
   index, 
@@ -198,6 +200,9 @@ export const MessageViewer = memo(() => {
   const messageIds = useStore(state => state.messageIds);
   const currentSession = useStore(state => state.currentSession);
   const searchQuery = useStore(state => state.searchQuery);
+  const loading = useStore(state => state.messagesLoading);
+  const error = useStore(state => state.messagesError);
+  const fetchMessages = useStore(state => state.fetchMessages);
   const setSearchQuery = useStore(state => state.setSearchQuery);
   
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -232,6 +237,56 @@ export const MessageViewer = memo(() => {
       rowVirtualizer.scrollToIndex(filteredIds.length - 1);
     }
   }, [filteredIds.length, rowVirtualizer]);
+
+  const renderMainContent = () => {
+    if (!currentSession) {
+      return (
+        <EmptyState 
+          icon="session" 
+          title="세션을 선택하세요" 
+          description="왼쪽에서 대화 세션을 선택하면 상세 메시지 내역이 여기에 표시됩니다." 
+        />
+      );
+    }
+
+    if (loading && messageIds.length === 0) {
+      return <MessageSkeleton />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={() => fetchMessages(currentSession.id)} />;
+    }
+
+    if (filteredIds.length === 0) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-2">
+          <Search size={32} className="opacity-10" />
+          <p className="text-sm font-medium">{searchQuery ? 'No messages match your search' : 'No messages in this session'}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+          <MessageListItem 
+            key={virtualItem.key}
+            id={filteredIds[virtualItem.index]!}
+            index={virtualItem.index}
+            start={virtualItem.start}
+            measureRef={rowVirtualizer.measureElement}
+            currentSessionModel={currentSession.model || 'Gemini'}
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-slate-900/50">
@@ -323,36 +378,7 @@ export const MessageViewer = memo(() => {
         ref={parentRef}
         className="flex-1 overflow-y-auto p-8 relative custom-scrollbar"
       >
-        {!currentSession ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-4">
-            <Cpu size={48} className="opacity-10" />
-            <p className="text-sm font-medium">Select a project and session to start monitoring</p>
-          </div>
-        ) : filteredIds.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-2">
-            <Search size={32} className="opacity-10" />
-            <p className="text-sm font-medium">No messages match your search</p>
-          </div>
-        ) : (
-          <div
-            style={{
-              height: `${rowVirtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => (
-              <MessageListItem 
-                key={virtualItem.key}
-                id={filteredIds[virtualItem.index]!}
-                index={virtualItem.index}
-                start={virtualItem.start}
-                measureRef={rowVirtualizer.measureElement}
-                currentSessionModel={currentSession.model || 'Gemini'}
-              />
-            ))}
-          </div>
-        )}
+        {renderMainContent()}
       </main>
     </div>
   );

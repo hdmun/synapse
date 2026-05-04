@@ -21,3 +21,8 @@ vi.mock('@tanstack/react-virtual', () => ({
     scrollToIndex: vi.fn(),
   }),
 }));
+
+// Mock zustand/react/shallow
+vi.mock('zustand/react/shallow', () => ({
+  useShallow: (fn: any) => fn,
+}));

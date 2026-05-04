@@ -16,8 +16,12 @@ interface AppState {
   searchQuery: string;
   
   // 상태 관리
-  loading: boolean;
-  error: string | null;
+  projectsLoading: boolean;
+  projectsError: string | null;
+  sessionsLoading: boolean;
+  sessionsError: string | null;
+  messagesLoading: boolean;
+  messagesError: string | null;
 
   setProjects: (projects: Project[]) => void;
   setSessions: (sessions: Session[]) => void;
@@ -50,8 +54,13 @@ export const useStore = create<AppState>((set, get) => ({
   currentProject: null,
   currentSession: null,
   searchQuery: '',
-  loading: false,
-  error: null,
+  
+  projectsLoading: false,
+  projectsError: null,
+  sessionsLoading: false,
+  sessionsError: null,
+  messagesLoading: false,
+  messagesError: null,
 
   setProjects: (projects) => {
     const projectsById: Record<string, Project> = {};
@@ -130,41 +139,46 @@ export const useStore = create<AppState>((set, get) => ({
   }),
 
   fetchProjects: async () => {
-    set({ loading: true, error: null });
+    set({ projectsLoading: true, projectsError: null });
     try {
       const res = await fetch('/api/projects');
       if (!res.ok) throw new Error('Failed to fetch projects');
       const data = await res.json();
       get().setProjects(data);
-      set({ loading: false });
     } catch (err: any) {
-      set({ error: err.message, loading: false });
+      set({ projectsError: err.message });
+    } finally {
+      set({ projectsLoading: false });
     }
   },
 
   fetchSessions: async (projectId: string) => {
-    set({ loading: true, error: null });
+    const isInitial = get().sessionIds.length === 0;
+    set({ sessionsLoading: true, sessionsError: null, sessionIds: isInitial ? [] : get().sessionIds });
     try {
       const res = await fetch(`/api/projects/${projectId}/sessions`);
       if (!res.ok) throw new Error('Failed to fetch sessions');
       const data = await res.json();
       get().setSessions(data);
-      set({ loading: false });
     } catch (err: any) {
-      set({ error: err.message, loading: false });
+      set({ sessionsError: err.message });
+    } finally {
+      set({ sessionsLoading: false });
     }
   },
 
   fetchMessages: async (sessionId: string) => {
-    set({ loading: true, error: null });
+    const isInitial = get().messageIds.length === 0;
+    set({ messagesLoading: true, messagesError: null, messageIds: isInitial ? [] : get().messageIds });
     try {
       const res = await fetch(`/api/sessions/${sessionId}`);
       if (!res.ok) throw new Error('Failed to fetch messages');
       const data = await res.json();
       get().setMessages(data);
-      set({ loading: false });
     } catch (err: any) {
-      set({ error: err.message, loading: false });
+      set({ messagesError: err.message });
+    } finally {
+      set({ messagesLoading: false });
     }
   },
 }));

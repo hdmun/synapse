@@ -18,14 +18,17 @@ describe('MessageViewer', () => {
       messageIds: [],
       currentSession: null,
       searchQuery: '',
-      setSearchQuery: (q) => useStore.setState({ searchQuery: q })
+      messagesLoading: false,
+      messagesError: null,
+      setSearchQuery: (q) => useStore.setState({ searchQuery: q }),
+      fetchMessages: vi.fn()
     });
     vi.clearAllMocks();
   });
 
   it('renders placeholder when no session is selected', () => {
     render(<MessageViewer />);
-    expect(screen.getByText(/Select a project and session/i)).toBeInTheDocument();
+    expect(screen.getByText(/세션을 선택하세요/i)).toBeInTheDocument();
   });
 
   it('renders multi-part JSON messages correctly', () => {
@@ -35,7 +38,7 @@ describe('MessageViewer', () => {
     ]);
 
     useStore.setState({
-      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', startTime: new Date(), lastUpdated: new Date() } as any,
+      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', createdAt: new Date() } as any,
       messagesById: {
         'm1': { id: 'm1', sessionId: 's1', type: 'gemini', content: multiPartContent, timestamp: new Date() } as any
       },
@@ -55,7 +58,7 @@ describe('MessageViewer', () => {
     ]);
 
     useStore.setState({
-      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', startTime: new Date(), lastUpdated: new Date() } as any,
+      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', createdAt: new Date() } as any,
       messagesById: {
         'm1': { id: 'm1', sessionId: 's1', type: 'gemini', content: fileContent, timestamp: new Date() } as any
       },
@@ -73,7 +76,7 @@ describe('MessageViewer', () => {
 
   it('renders thought process with accordion interaction', () => {
     useStore.setState({
-      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', startTime: new Date(), lastUpdated: new Date() } as any,
+      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', createdAt: new Date() } as any,
       messagesById: {
         'm1': { 
           id: 'm1', 
@@ -103,7 +106,7 @@ describe('MessageViewer', () => {
 
   it('filters messages based on search query', () => {
     useStore.setState({
-      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', startTime: new Date(), lastUpdated: new Date() } as any,
+      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini-pro', createdAt: new Date() } as any,
       messagesById: {
         'm1': { id: 'm1', content: 'Apple', type: 'user', timestamp: new Date() } as any,
         'm2': { id: 'm2', content: 'Banana', type: 'user', timestamp: new Date() } as any

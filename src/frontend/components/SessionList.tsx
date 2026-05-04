@@ -2,6 +2,7 @@ import React, { memo, useRef } from 'react';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { SessionSkeleton, EmptyState, ErrorState } from './StatusStates';
 
 const SessionListItem = memo(({ 
   id, 
@@ -67,10 +68,12 @@ const SessionListItem = memo(({
 SessionListItem.displayName = 'SessionListItem';
 
 export const SessionList = memo(() => {
-  const sessionIds = useStore(useShallow(state => state.sessionIds));
-  // Keep sessionsById to count active sessions, or derive it. Actually `sessionsById` lookup might cause re-renders if *any* session updates.
-  // Wait, the header renders: `{sessions.filter(s => s.status === 'active').length} Active`
-  // To avoid `sessionsById` re-renders here, let's create a specific selector for active sessions count.
+  const sessionIds = useStore(state => state.sessionIds);
+  const loading = useStore(state => state.sessionsLoading);
+  const error = useStore(state => state.sessionsError);
+  const currentProject = useStore(state => state.currentProject);
+  const fetchSessions = useStore(state => state.fetchSessions);
+
   const activeCount = useStore(state => {
     return state.sessionIds.filter(id => state.sessionsById[id]?.status === 'active').length;
   });
@@ -84,6 +87,56 @@ export const SessionList = memo(() => {
     overscan: 5,
   });
 
+  const renderContent = () => {
+    if (!currentProject) {
+      return (
+        <EmptyState 
+          icon="project" 
+          title="프로젝트를 선택하세요" 
+          description="왼쪽 목록에서 프로젝트를 선택하면 대화 세션이 여기에 표시됩니다." 
+        />
+      );
+    }
+
+    if (loading && sessionIds.length === 0) {
+      return <SessionSkeleton />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={() => fetchSessions(currentProject.id)} />;
+    }
+
+    if (sessionIds.length === 0) {
+      return (
+        <EmptyState 
+          icon="session" 
+          title="세션이 없습니다" 
+          description="이 프로젝트에 생성된 대화 세션이 아직 없습니다." 
+        />
+      );
+    }
+
+    return (
+      <div
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+          <SessionListItem 
+            key={virtualItem.key}
+            id={sessionIds[virtualItem.index]!}
+            index={virtualItem.index}
+            start={virtualItem.start}
+            measureRef={rowVirtualizer.measureElement}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
       <div className="p-6 border-b border-slate-800/50 flex justify-between items-center">
@@ -95,23 +148,7 @@ export const SessionList = memo(() => {
         )}
       </div>
       <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
-          {rowVirtualizer.getVirtualItems().map((virtualItem) => (
-            <SessionListItem 
-              key={virtualItem.key}
-              id={sessionIds[virtualItem.index]!}
-              index={virtualItem.index}
-              start={virtualItem.start}
-              measureRef={rowVirtualizer.measureElement}
-            />
-          ))}
-        </div>
+        {renderContent()}
       </div>
     </div>
   );
