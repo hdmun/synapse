@@ -3,15 +3,82 @@ import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
-export const SessionList = memo(() => {
-  const sessions = useStore(useShallow(state => state.sessions));
+const SessionListItem = memo(({ 
+  id, 
+  index, 
+  start, 
+  measureRef 
+}: { 
+  id: string, 
+  index: number, 
+  start: number, 
+  measureRef: (node: Element | null) => void 
+}) => {
+  const s = useStore(state => state.sessionsById[id]);
   const currentSession = useStore(state => state.currentSession);
   const setCurrentSession = useStore(state => state.setCurrentSession);
   const fetchMessages = useStore(state => state.fetchMessages);
+
+  if (!s) return null;
+  const isActive = currentSession?.id === s.id;
+
+  return (
+    <div
+      data-index={index}
+      ref={measureRef}
+      className="absolute top-0 left-0 w-full"
+      style={{
+        transform: `translateY(${start}px)`,
+        paddingBottom: '8px'
+      }}
+    >
+      <button
+        onClick={() => { setCurrentSession(s); fetchMessages(s.id); }}
+        className={`w-full text-left p-4 rounded-xl border transition-all ${
+          isActive 
+          ? 'bg-indigo-600/10 border-indigo-500/50' 
+          : 'bg-transparent border-transparent hover:bg-slate-800/30 hover:border-slate-800/50'
+        }`}
+      >
+        <div className="flex justify-between items-start mb-1">
+          <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
+            #{s.id.slice(0, 8).toUpperCase()}
+          </span>
+          <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
+            s.status === 'active' 
+            ? 'bg-indigo-600 text-white' 
+            : 'bg-slate-800 text-slate-500'
+          }`}>
+            {s.status?.toUpperCase() || ''}
+          </span>
+        </div>
+        <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model {s.model}</div>
+        {s.summary && (
+          <div className={`text-[11px] font-medium truncate mt-2 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`} title={s.summary}>
+            {s.summary}
+          </div>
+        )}
+        <div className="text-[10px] text-slate-600 mt-2">Recently updated</div>
+      </button>
+    </div>
+  );
+});
+
+SessionListItem.displayName = 'SessionListItem';
+
+export const SessionList = memo(() => {
+  const sessionIds = useStore(useShallow(state => state.sessionIds));
+  // Keep sessionsById to count active sessions, or derive it. Actually `sessionsById` lookup might cause re-renders if *any* session updates.
+  // Wait, the header renders: `{sessions.filter(s => s.status === 'active').length} Active`
+  // To avoid `sessionsById` re-renders here, let's create a specific selector for active sessions count.
+  const activeCount = useStore(state => {
+    return state.sessionIds.filter(id => state.sessionsById[id]?.status === 'active').length;
+  });
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
-    count: sessions.length,
+    count: sessionIds.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 110,
     overscan: 5,
@@ -21,9 +88,9 @@ export const SessionList = memo(() => {
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
       <div className="p-6 border-b border-slate-800/50 flex justify-between items-center">
         <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
-        {sessions.length > 0 && (
+        {sessionIds.length > 0 && (
           <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-            {sessions.filter(s => s.status === 'active').length} Active
+            {activeCount} Active
           </span>
         )}
       </div>
@@ -35,51 +102,15 @@ export const SessionList = memo(() => {
             position: 'relative',
           }}
         >
-          {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-            const s = sessions[virtualItem.index];
-            const isActive = currentSession?.id === s.id;
-            return (
-              <div
-                key={virtualItem.key}
-                data-index={virtualItem.index}
-                ref={rowVirtualizer.measureElement}
-                className="absolute top-0 left-0 w-full"
-                style={{
-                  transform: `translateY(${virtualItem.start}px)`,
-                  paddingBottom: '8px'
-                }}
-              >
-                <button
-                  onClick={() => { setCurrentSession(s); fetchMessages(s.id); }}
-                  className={`w-full text-left p-4 rounded-xl border transition-all ${
-                    isActive 
-                    ? 'bg-indigo-600/10 border-indigo-500/50' 
-                    : 'bg-transparent border-transparent hover:bg-slate-800/30 hover:border-slate-800/50'
-                  }`}
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
-                      #{s.id.slice(0, 8).toUpperCase()}
-                    </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
-                      s.status === 'active' 
-                      ? 'bg-indigo-600 text-white' 
-                      : 'bg-slate-800 text-slate-500'
-                    }`}>
-                      {s.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model {s.model}</div>
-                  {s.summary && (
-                    <div className={`text-[11px] font-medium truncate mt-2 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`} title={s.summary}>
-                      {s.summary}
-                    </div>
-                  )}
-                  <div className="text-[10px] text-slate-600 mt-2">Recently updated</div>
-                </button>
-              </div>
-            );
-          })}
+          {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+            <SessionListItem 
+              key={virtualItem.key}
+              id={sessionIds[virtualItem.index]!}
+              index={virtualItem.index}
+              start={virtualItem.start}
+              measureRef={rowVirtualizer.measureElement}
+            />
+          ))}
         </div>
       </div>
     </div>

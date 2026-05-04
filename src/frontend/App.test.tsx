@@ -15,13 +15,24 @@ vi.mock('socket.io-client', () => ({
   })),
 }));
 
+// Mock react-virtual
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: () => ({
+    getVirtualItems: () => [],
+    getTotalSize: () => 100,
+    measureElement: vi.fn(),
+    scrollToIndex: vi.fn(),
+    measure: vi.fn()
+  })
+}));
+
 import { useStore } from './store/useStore';
 
 describe('App Component', () => {
   const mockState = {
-    projects: [],
-    sessions: [],
-    messages: [],
+    projectsById: {}, projectIds: [],
+    sessionsById: {}, sessionIds: [],
+    messagesById: {}, messageIds: [],
     currentProject: null,
     currentSession: null,
     loading: false,
@@ -38,13 +49,13 @@ describe('App Component', () => {
     (useStore as any).mockImplementation((selector: any) => selector(mockState));
   });
 
-  it('renders "Gemini Monitor" title', () => {
+  it('renders "Synapse Monitor" title', () => {
     render(<App />);
-    expect(screen.getByText('Gemini Monitor')).toBeInTheDocument();
+    expect(screen.getByText('Synapse Monitor')).toBeInTheDocument();
   });
 
-  it('renders "Select a project and session" when no session is selected', async () => {
+  it('renders "Welcome to Synapse" when no session is selected', async () => {
     render(<App />);
-    expect(await screen.findByText('Select a project and session to start monitoring')).toBeInTheDocument();
+    expect(await screen.findByText('Welcome to Synapse')).toBeInTheDocument();
   });
 });

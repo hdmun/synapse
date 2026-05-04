@@ -9,7 +9,9 @@ const mockMessage: Message = { id: 'm1', sessionId: 's1', type: 'user', content:
 describe('useStore', () => {
   beforeEach(() => {
     useStore.setState({
-      projects: [], sessions: [], messages: [],
+      projectsById: {}, projectIds: [],
+      sessionsById: {}, sessionIds: [],
+      messagesById: {}, messageIds: [],
       currentProject: null, currentSession: null, searchQuery: '',
       loading: false, error: null
     });
@@ -17,10 +19,11 @@ describe('useStore', () => {
 
   it('sets and updates projects', () => {
     useStore.getState().setProjects([mockProject]);
-    expect(useStore.getState().projects).toEqual([mockProject]);
+    expect(useStore.getState().projectIds).toEqual(['p1']);
+    expect(useStore.getState().projectsById['p1']).toEqual(mockProject);
     
     useStore.getState().updateProject({ id: 'p1', progress: 50 });
-    expect(useStore.getState().projects[0].progress).toBe(50);
+    expect(useStore.getState().projectsById['p1']?.progress).toBe(50);
   });
   
   it('updates currentProject if updated', () => {
@@ -33,32 +36,32 @@ describe('useStore', () => {
   it('adds messages and prevents duplicates', () => {
     useStore.getState().setCurrentSession(mockSession);
     useStore.getState().addMessage('s1', mockMessage);
-    expect(useStore.getState().messages).toHaveLength(1);
+    expect(useStore.getState().messageIds).toHaveLength(1);
     
     // Duplicate
     useStore.getState().addMessage('s1', mockMessage);
-    expect(useStore.getState().messages).toHaveLength(1);
+    expect(useStore.getState().messageIds).toHaveLength(1);
     
     // Different session ID
     useStore.getState().addMessage('s2', { ...mockMessage, id: 'm2' });
-    expect(useStore.getState().messages).toHaveLength(1); // Not added because currentSession is s1
+    expect(useStore.getState().messageIds).toHaveLength(1); // Not added because currentSession is s1
   });
 
   it('handles fetchProjects success', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ([mockProject])
-    });
+    }) as unknown as typeof fetch;
 
     await useStore.getState().fetchProjects();
-    expect(useStore.getState().projects).toEqual([mockProject]);
+    expect(useStore.getState().projectIds).toEqual(['p1']);
     expect(useStore.getState().loading).toBe(false);
   });
 
   it('handles fetchProjects failure', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false
-    });
+    }) as unknown as typeof fetch;
 
     await useStore.getState().fetchProjects();
     expect(useStore.getState().error).toBe('Failed to fetch projects');

@@ -7,7 +7,10 @@ import { useStore } from '../store/useStore';
 describe('ProjectList', () => {
   beforeEach(() => {
     useStore.setState({
-      projects: [{ id: 'p1', name: 'Test Project', path: '/test/path', progress: 50 }],
+      projectsById: {
+        'p1': { id: 'p1', name: 'Test Project', path: '/test/path', progress: 50 }
+      },
+      projectIds: ['p1'],
       currentProject: null,
       setCurrentProject: vi.fn(),
       fetchSessions: vi.fn()

@@ -20,7 +20,8 @@ vi.mock('@tanstack/react-virtual', () => ({
 describe('MessageViewer', () => {
   beforeEach(() => {
     useStore.setState({
-      messages: [],
+      messagesById: {},
+      messageIds: [],
       currentSession: null
     });
   });
@@ -32,10 +33,11 @@ describe('MessageViewer', () => {
 
   it('renders messages when session is selected', () => {
     useStore.setState({
-      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini', timestamp: 1 },
-      messages: [
-        { id: 'm1', sessionId: 's1', type: 'user', content: 'Hello World', timestamp: Date.now() }
-      ]
+      currentSession: { id: 's1', projectId: 'p1', status: 'active', model: 'gemini', startTime: '1', lastUpdated: '1' },
+      messagesById: {
+        'm1': { id: 'm1', sessionId: 's1', type: 'user', content: 'Hello World', timestamp: '2024-01-01' }
+      },
+      messageIds: ['m1']
     });
 
     render(<MessageViewer />);

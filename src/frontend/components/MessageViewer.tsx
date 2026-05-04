@@ -3,24 +3,126 @@ import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, Zap, PlusCircle, Mic, Send, Terminal, Cpu } from 'lucide-react';
 
+const MessageListItem = memo(({ 
+  id, 
+  index, 
+  start, 
+  measureRef,
+  currentSessionModel
+}: { 
+  id: string, 
+  index: number, 
+  start: number, 
+  measureRef: (node: Element | null) => void,
+  currentSessionModel: string
+}) => {
+  const m = useStore(state => state.messagesById[id]);
+  if (!m) return null;
+  const isUser = m.type === 'user';
+
+  return (
+    <div
+      data-index={index}
+      ref={measureRef}
+      className="absolute top-0 left-0 w-full"
+      style={{
+        transform: `translateY(${start}px)`,
+        paddingBottom: '40px'
+      }}
+    >
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} group space-y-2`}>
+        {(() => {
+          let parts = [];
+          try {
+            if (m.content.startsWith('[') && m.content.endsWith(']')) {
+              const parsed = JSON.parse(m.content);
+              if (Array.isArray(parsed)) {
+                parts = parsed;
+              } else {
+                parts = [{ text: m.content }];
+              }
+            } else {
+              parts = [{ text: m.content }];
+            }
+          } catch (e) {
+            parts = [{ text: m.content }];
+          }
+
+          return parts.map((part: any, idx) => {
+            let content: React.ReactNode = null;
+            if (part.text) {
+              content = part.text;
+            } else if (part.inline_data) {
+              content = <span className="italic opacity-70">[Image Data: {part.inline_data.mime_type}]</span>;
+            } else if (part.file_data) {
+              content = <span className="italic opacity-70">[File: {part.file_data.file_uri}]</span>;
+            } else if (part.function_call) {
+              content = <span className="italic opacity-70">[Function Call: {part.function_call.name}]</span>;
+            } else if (part.function_response) {
+              content = <span className="italic opacity-70">[Function Response: {part.function_response.name}]</span>;
+            } else {
+              content = JSON.stringify(part);
+            }
+
+            return (
+              <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm ${
+                isUser 
+                ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' 
+                : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
+              }`}>
+                <div className="whitespace-pre-wrap">{content}</div>
+                
+                {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
+                {idx === parts.length - 1 && !isUser && m.thoughts && m.thoughts.length > 0 && (
+                  <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-slate-900 transition-colors">
+                          <div className="flex items-center gap-2.5">
+                              <Terminal size={14} className="text-slate-500" />
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
+                          </div>
+                      </div>
+                      <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
+                          {m.thoughts.map((t, idx) => (
+                            <div key={idx} className="flex gap-2">
+                              <span className="text-indigo-500">&gt;</span>
+                              <span>{t.subject}: {t.description}</span>
+                            </div>
+                          ))}
+                      </div>
+                  </div>
+                )}
+              </div>
+            );
+          });
+        })()}
+        <div className={`mt-2.5 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${isUser ? 'mr-1' : 'ml-1'}`}>
+            {isUser ? 'User' : currentSessionModel} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MessageListItem.displayName = 'MessageListItem';
+
 export const MessageViewer = memo(() => {
-  const messages = useStore(state => state.messages);
+  const messageIds = useStore(state => state.messageIds);
   const currentSession = useStore(state => state.currentSession);
   
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
-    count: messages.length,
+    count: messageIds.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 120,
     overscan: 5,
   });
 
   useEffect(() => {
-    if (messages.length > 0) {
-      rowVirtualizer.scrollToIndex(messages.length - 1);
+    if (messageIds.length > 0) {
+      rowVirtualizer.scrollToIndex(messageIds.length - 1);
     }
-  }, [messages.length, rowVirtualizer]);
+  }, [messageIds.length, rowVirtualizer]);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-900/50">
@@ -71,92 +173,16 @@ export const MessageViewer = memo(() => {
               position: 'relative',
             }}
           >
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-              const m = messages[virtualItem.index];
-              const isUser = m.type === 'user';
-              return (
-                <div
-                  key={virtualItem.key}
-                  data-index={virtualItem.index}
-                  ref={rowVirtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full"
-                  style={{
-                    transform: `translateY(${virtualItem.start}px)`,
-                    paddingBottom: '40px'
-                  }}
-                >
-                  <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} group space-y-2`}>
-                    {(() => {
-                      let parts = [];
-                      try {
-                        if (m.content.startsWith('[') && m.content.endsWith(']')) {
-                          const parsed = JSON.parse(m.content);
-                          if (Array.isArray(parsed)) {
-                            parts = parsed;
-                          } else {
-                            parts = [{ text: m.content }];
-                          }
-                        } else {
-                          parts = [{ text: m.content }];
-                        }
-                      } catch (e) {
-                        parts = [{ text: m.content }];
-                      }
-
-                      return parts.map((part: any, idx) => {
-                        let content: React.ReactNode = null;
-                        if (part.text) {
-                          content = part.text;
-                        } else if (part.inline_data) {
-                          content = <span className="italic opacity-70">[Image Data: {part.inline_data.mime_type}]</span>;
-                        } else if (part.file_data) {
-                          content = <span className="italic opacity-70">[File: {part.file_data.file_uri}]</span>;
-                        } else if (part.function_call) {
-                          content = <span className="italic opacity-70">[Function Call: {part.function_call.name}]</span>;
-                        } else if (part.function_response) {
-                          content = <span className="italic opacity-70">[Function Response: {part.function_response.name}]</span>;
-                        } else {
-                          content = JSON.stringify(part);
-                        }
-
-                        return (
-                          <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm ${
-                            isUser 
-                            ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' 
-                            : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
-                          }`}>
-                            <div className="whitespace-pre-wrap">{content}</div>
-                            
-                            {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
-                            {idx === parts.length - 1 && !isUser && m.thoughts && m.thoughts.length > 0 && (
-                              <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                                 <div className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-slate-900 transition-colors">
-                                      <div className="flex items-center gap-2.5">
-                                          <Terminal size={14} className="text-slate-500" />
-                                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
-                                      </div>
-                                  </div>
-                                  <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
-                                      {m.thoughts.map((t, idx) => (
-                                        <div key={idx} className="flex gap-2">
-                                          <span className="text-indigo-500">&gt;</span>
-                                          <span>{t.subject}: {t.description}</span>
-                                        </div>
-                                      ))}
-                                  </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      });
-                    })()}
-                    <div className={`mt-2.5 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${isUser ? 'mr-1' : 'ml-1'}`}>
-                       {isUser ? 'User' : (currentSession?.model || 'Gemini')} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+              <MessageListItem 
+                key={virtualItem.key}
+                id={messageIds[virtualItem.index]!}
+                index={virtualItem.index}
+                start={virtualItem.start}
+                measureRef={rowVirtualizer.measureElement}
+                currentSessionModel={currentSession.model || 'Gemini'}
+              />
+            ))}
           </div>
         )}
       </main>
