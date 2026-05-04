@@ -27,6 +27,7 @@ export default defineConfig({
     port: 3001,
     proxy: {
       '/api': 'http://localhost:4000',
+      '/files': 'http://localhost:4000',
       '/socket.io': {
         target: 'ws://localhost:4000',
         ws: true,

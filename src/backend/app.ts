@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import fastifyStatic from '@fastify/static';
 import { socketPlugin } from './plugins/socket';
 import apiRoutes from './routes/api';
 import { Syncer } from './services/syncer';
@@ -20,6 +21,12 @@ export async function buildApp(config: AppConfig) {
   
   await fastify.register(cors);
   await fastify.register(apiRoutes);
+
+  // Register static file serving for local files
+  await fastify.register(fastifyStatic, {
+    root: config.targetDir,
+    prefix: '/files/',
+  });
 
   // Global Error Handler
   fastify.setErrorHandler((error: any, request, reply) => {

@@ -1,7 +1,7 @@
-import React, { memo, useRef, useEffect } from 'react';
+import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Search, Zap, PlusCircle, Mic, Send, Terminal, Cpu } from 'lucide-react';
+import { Search, Zap, Terminal, Cpu, FileText, Image as ImageIcon, Copy, ExternalLink, ChevronDown, ChevronRight, File, Check } from 'lucide-react';
 
 const MessageListItem = memo(({ 
   id, 
@@ -17,8 +17,33 @@ const MessageListItem = memo(({
   currentSessionModel: string
 }) => {
   const m = useStore(state => state.messagesById[id]);
+  const [isThoughtExpanded, setIsThoughtExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
   if (!m) return null;
   const isUser = m.type === 'user';
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const parsedParts = React.useMemo(() => {
+    if (!m.content) return [{ text: '' }];
+    
+    // Check if it's a JSON array of parts
+    if (m.content.trim().startsWith('[') && m.content.trim().endsWith(']')) {
+      try {
+        const parsed = JSON.parse(m.content);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // Fallback to text if parsing fails
+      }
+    }
+    
+    return [{ text: m.content }];
+  }, [m.content]);
 
   return (
     <div
@@ -31,70 +56,133 @@ const MessageListItem = memo(({
       }}
     >
       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} group space-y-2`}>
-        {(() => {
-          let parts = [];
-          try {
-            if (m.content.startsWith('[') && m.content.endsWith(']')) {
-              const parsed = JSON.parse(m.content);
-              if (Array.isArray(parsed)) {
-                parts = parsed;
-              } else {
-                parts = [{ text: m.content }];
-              }
-            } else {
-              parts = [{ text: m.content }];
-            }
-          } catch (e) {
-            parts = [{ text: m.content }];
-          }
-
-          return parts.map((part: any, idx) => {
-            let content: React.ReactNode = null;
-            if (part.text) {
-              content = part.text;
-            } else if (part.inline_data) {
-              content = <span className="italic opacity-70">[Image Data: {part.inline_data.mime_type}]</span>;
-            } else if (part.file_data) {
-              content = <span className="italic opacity-70">[File: {part.file_data.file_uri}]</span>;
-            } else if (part.function_call) {
-              content = <span className="italic opacity-70">[Function Call: {part.function_call.name}]</span>;
-            } else if (part.function_response) {
-              content = <span className="italic opacity-70">[Function Response: {part.function_response.name}]</span>;
-            } else {
-              content = JSON.stringify(part);
-            }
-
-            return (
-              <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm ${
-                isUser 
-                ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' 
-                : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
-              }`}>
-                <div className="whitespace-pre-wrap">{content}</div>
+        {parsedParts.map((part: any, idx) => {
+          let content: React.ReactNode = null;
+          
+          if (part.text) {
+            content = <div className="whitespace-pre-wrap">{part.text}</div>;
+          } else if (part.inline_data) {
+            const src = `data:${part.inline_data.mime_type};base64,${part.inline_data.data}`;
+            content = (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <ImageIcon size={12} />
+                  <span>Inline Image ({part.inline_data.mime_type})</span>
+                </div>
+                <img src={src} alt="inline" className="rounded-lg max-w-full border border-slate-700 shadow-sm" />
+              </div>
+            );
+          } else if (part.file_data) {
+            const isImage = part.file_data.mime_type?.startsWith('image/');
+            const fileUrl = `/files/${part.file_data.file_uri}`;
+            
+            content = (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <File size={12} />
+                  <span>Local File Reference</span>
+                </div>
                 
-                {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
-                {idx === parts.length - 1 && !isUser && m.thoughts && m.thoughts.length > 0 && (
-                  <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-slate-900 transition-colors">
-                          <div className="flex items-center gap-2.5">
-                              <Terminal size={14} className="text-slate-500" />
-                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
-                          </div>
+                {isImage ? (
+                  <img src={fileUrl} alt={part.file_data.file_uri} className="rounded-lg max-w-full border border-slate-700 shadow-sm" />
+                ) : (
+                  <div className="bg-slate-900/80 border border-slate-700 rounded-xl p-4 flex items-center justify-between gap-4 w-full">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-10 h-10 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
+                        <FileText size={20} className="text-indigo-400" />
                       </div>
-                      <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
-                          {m.thoughts.map((t, idx) => (
-                            <div key={idx} className="flex gap-2">
-                              <span className="text-indigo-500">&gt;</span>
-                              <span>{t.subject}: {t.description}</span>
-                            </div>
-                          ))}
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-sm font-bold text-slate-200 truncate">{part.file_data.file_uri.split('/').pop()}</span>
+                        <span className="text-[10px] text-slate-500 truncate font-mono">{part.file_data.file_uri}</span>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button 
+                        onClick={() => copyToClipboard(part.file_data.file_uri)}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${copied ? 'bg-emerald-500/10 text-emerald-500' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+                        title="Copy Local Path"
+                      >
+                        {copied ? <Check size={16} /> : <Copy size={16} />}
+                      </button>
+                      <a 
+                        href={fileUrl} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-800 hover:text-white transition-all"
+                        title="Open File"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>
             );
-          });
-        })()}
+          } else if (part.function_call) {
+            content = (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                  <Zap size={12} />
+                  <span>Function Call: {part.function_call.name}</span>
+                </div>
+                <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
+                  {JSON.stringify(part.function_call.args, null, 2)}
+                </pre>
+              </div>
+            );
+          } else if (part.function_response) {
+            content = (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
+                  <Terminal size={12} />
+                  <span>Function Response: {part.function_response.name}</span>
+                </div>
+                <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
+                  {JSON.stringify(part.function_response.response, null, 2)}
+                </pre>
+              </div>
+            );
+          } else {
+            content = <pre className="whitespace-pre-wrap text-[11px]">{JSON.stringify(part, null, 2)}</pre>;
+          }
+
+          return (
+            <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm ${
+              isUser 
+              ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' 
+              : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
+            }`}>
+              {content}
+              
+              {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
+              {idx === parsedParts.length - 1 && !isUser && m.thoughts && m.thoughts.length > 0 && (
+                <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+                    <button 
+                      onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
+                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                      aria-expanded={isThoughtExpanded}
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <Terminal size={14} className="text-slate-500" />
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
+                        </div>
+                        {isThoughtExpanded ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
+                    </button>
+                    {isThoughtExpanded && (
+                      <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
+                          {m.thoughts.map((t, idx) => (
+                            <div key={idx} className="flex gap-2 text-left">
+                              <span className="text-indigo-500 shrink-0">&gt;</span>
+                              <span>{t.subject}: {t.description}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div className={`mt-2.5 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider ${isUser ? 'mr-1' : 'ml-1'}`}>
             {isUser ? 'User' : currentSessionModel} • {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
@@ -106,28 +194,49 @@ const MessageListItem = memo(({
 MessageListItem.displayName = 'MessageListItem';
 
 export const MessageViewer = memo(() => {
+  const messagesById = useStore(state => state.messagesById);
   const messageIds = useStore(state => state.messageIds);
   const currentSession = useStore(state => state.currentSession);
+  const searchQuery = useStore(state => state.searchQuery);
+  const setSearchQuery = useStore(state => state.setSearchQuery);
   
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isModelInfoVisible, setIsModelInfoVisible] = useState(false);
+
+  const filteredIds = React.useMemo(() => {
+    if (!searchQuery) return messageIds;
+    const query = searchQuery.toLowerCase();
+    return messageIds.filter(id => {
+      const m = messagesById[id];
+      return m && m.content.toLowerCase().includes(query);
+    });
+  }, [messageIds, messagesById, searchQuery]);
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
-    count: messageIds.length,
+    count: filteredIds.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 120,
+    estimateSize: useCallback((index: number) => {
+      const id = filteredIds[index];
+      const m = messagesById[id!];
+      if (!m) return 100;
+      // Rough estimate based on content length
+      return 100 + (m.content.length / 2) + (m.thoughts?.length ? 60 : 0);
+    }, [filteredIds, messagesById]),
     overscan: 5,
   });
 
   useEffect(() => {
-    if (messageIds.length > 0) {
-      rowVirtualizer.scrollToIndex(messageIds.length - 1);
+    if (filteredIds.length > 0) {
+      rowVirtualizer.scrollToIndex(filteredIds.length - 1);
     }
-  }, [messageIds.length, rowVirtualizer]);
+  }, [filteredIds.length, rowVirtualizer]);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-900/50">
       {/* Chat Sub-Header */}
-      <div className="h-16 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between shrink-0">
+      <div className="h-16 bg-slate-900 border-b border-slate-800 px-8 flex items-center justify-between shrink-0 relative">
           <div className="flex items-center gap-8">
               <div className="flex flex-col">
                   <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Session ID</span>
@@ -146,13 +255,67 @@ export const MessageViewer = memo(() => {
                   </div>
               </div>
           </div>
+
+          {/* Search Input Overlay */}
+          {isSearchVisible && (
+            <div className="absolute inset-0 bg-slate-900 px-8 flex items-center gap-4 z-10">
+              <Search size={18} className="text-slate-500" />
+              <input 
+                autoFocus
+                type="text" 
+                placeholder="Search messages..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && setIsSearchVisible(false)}
+                className="flex-1 bg-transparent border-none outline-none text-sm text-slate-200 placeholder:text-slate-600"
+              />
+              <button 
+                onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }}
+                className="text-xs font-bold text-slate-500 hover:text-slate-300 uppercase tracking-wider"
+              >
+                Close
+              </button>
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
-              <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-800 transition-all">
+              <button 
+                onClick={() => setIsSearchVisible(true)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isSearchVisible ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-800'}`}
+              >
                   <Search size={20} />
               </button>
-              <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-800 transition-all">
-                  <Cpu size={20} />
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setIsModelInfoVisible(!isModelInfoVisible)}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isModelInfoVisible ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-800'}`}
+                >
+                    <Cpu size={20} />
+                </button>
+                
+                {isModelInfoVisible && currentSession && (
+                  <div className="absolute right-0 top-12 w-64 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-4 z-20 space-y-4">
+                    <div className="flex items-center gap-2 border-b border-slate-700 pb-2">
+                      <Cpu size={16} className="text-indigo-400" />
+                      <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">Session Details</span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Model Name</span>
+                        <span className="text-sm text-slate-300">{currentSession.model}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Created At</span>
+                        <span className="text-sm text-slate-300">{new Date(currentSession.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Message Count</span>
+                        <span className="text-sm text-slate-300">{messageIds.length} messages</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
           </div>
       </div>
 
@@ -165,6 +328,11 @@ export const MessageViewer = memo(() => {
             <Cpu size={48} className="opacity-10" />
             <p className="text-sm font-medium">Select a project and session to start monitoring</p>
           </div>
+        ) : filteredIds.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-slate-700 space-y-2">
+            <Search size={32} className="opacity-10" />
+            <p className="text-sm font-medium">No messages match your search</p>
+          </div>
         ) : (
           <div
             style={{
@@ -176,7 +344,7 @@ export const MessageViewer = memo(() => {
             {rowVirtualizer.getVirtualItems().map((virtualItem) => (
               <MessageListItem 
                 key={virtualItem.key}
-                id={messageIds[virtualItem.index]!}
+                id={filteredIds[virtualItem.index]!}
                 index={virtualItem.index}
                 start={virtualItem.start}
                 measureRef={rowVirtualizer.measureElement}
@@ -186,32 +354,6 @@ export const MessageViewer = memo(() => {
           </div>
         )}
       </main>
-
-      {/* Mock Input Area */}
-      <div className="p-8 bg-slate-900 border-t border-slate-800 shrink-0">
-          <div className="max-w-4xl mx-auto relative">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                  <button className="text-slate-500 hover:text-indigo-400 transition-colors">
-                      <PlusCircle size={20} />
-                  </button>
-              </div>
-              <input 
-                type="text" 
-                placeholder="Ask Gemini anything..." 
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-2xl py-4 pl-14 pr-32 focus:outline-none focus:border-indigo-500 transition-all text-sm text-slate-200 placeholder:text-slate-600"
-              />
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-4">
-                  <button className="text-slate-500 hover:text-indigo-400 transition-colors">
-                      <Mic size={20} />
-                  </button>
-                  <div className="w-px h-5 bg-slate-700"></div>
-                  <button className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20">
-                      <span className="text-xs font-bold uppercase tracking-wider">Send</span>
-                      <Send size={14} />
-                  </button>
-              </div>
-          </div>
-      </div>
     </div>
   );
 });
