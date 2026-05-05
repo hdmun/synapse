@@ -24,7 +24,7 @@ describe('SessionList', () => {
     expect(screen.getByText('Chat Sessions')).toBeInTheDocument();
     expect(screen.getByText('#S1-VERY-')).toBeInTheDocument();
     expect(screen.getByText('ACTIVE')).toBeInTheDocument();
-    expect(screen.getByText(/Model gemini-1\.5/)).toBeInTheDocument();
+    expect(screen.getByText(/Model: gemini-1\.5/)).toBeInTheDocument();
   });
 
   it('handles session selection', () => {

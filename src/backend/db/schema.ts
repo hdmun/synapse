@@ -20,6 +20,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
 export const sessions = sqliteTable('sessions', {
   id: text('id').primaryKey(), // sessionId
   projectId: text('project_id').references(() => projects.id),
+  source: text('source', { enum: ['gemini', 'copilot'] }).default('gemini').notNull(),
   startTime: integer('start_time', { mode: 'timestamp' }).notNull(),
   lastUpdated: integer('last_updated', { mode: 'timestamp' }).notNull(),
   status: text('status', { enum: ['active', 'success', 'error', 'cancelled'] }).default('active'),

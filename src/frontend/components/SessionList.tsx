@@ -42,9 +42,18 @@ const SessionListItem = memo(({
         }`}
       >
         <div className="flex justify-between items-start mb-1">
-          <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
-            #{s.id.slice(0, 8).toUpperCase()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
+              #{s.id.slice(0, 8).toUpperCase()}
+            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${
+              s.source === 'copilot' 
+                ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                : 'bg-blue-900/30 text-blue-400 border-blue-500/30'
+            }`}>
+              {s.source === 'copilot' ? 'Copilot' : 'Gemini'}
+            </span>
+          </div>
           <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
             s.status === 'active' 
             ? 'bg-indigo-600 text-white' 
@@ -53,7 +62,7 @@ const SessionListItem = memo(({
             {s.status?.toUpperCase() || ''}
           </span>
         </div>
-        <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model {s.model}</div>
+        <div className={`text-[11px] ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>Model: {s.model || 'Unknown'}</div>
         {s.summary && (
           <div className={`text-[11px] font-medium truncate mt-2 ${isActive ? 'text-indigo-200' : 'text-slate-400'}`} title={s.summary}>
             {s.summary}

@@ -3,8 +3,9 @@ import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import { socketPlugin } from './plugins/socket';
 import apiRoutes from './routes/api';
-import { Syncer } from './services/syncer';
-import { Watcher } from './services/watcher';
+import { SyncManager } from './services/sync.manager';
+import { GeminiCollector } from './services/collectors/gemini.collector';
+import { CopilotCollector } from './services/collectors/copilot.collector';
 import { initDb } from './db';
 import { AppError } from './utils/errors';
 
@@ -59,10 +60,17 @@ export async function buildApp(config: AppConfig) {
   await initDb();
 
   // Service initialization
-  const syncer = new Syncer(config.targetDir, (sessionId, data) => {
+  const syncManager = new SyncManager((sessionId, data) => {
     fastify.io.emit('session-update', { sessionId, ...data });
   });
-  const watcher = new Watcher(syncer);
+
+  const geminiCollector = new GeminiCollector(config.targetDir);
+  geminiCollector.on('session-update', (session) => syncManager.syncSession(session));
+  geminiCollector.on('error', (err) => fastify.log.error(`[GeminiCollector] Error: ${err}`));
+
+  const copilotCollector = new CopilotCollector();
+  copilotCollector.on('session-update', (session) => syncManager.syncSession(session));
+  copilotCollector.on('error', (err) => fastify.log.error(`[CopilotCollector] Error: ${err}`));
 
   if (!config.isTest) {
     fastify.io.on('connection', (socket) => {
@@ -73,13 +81,16 @@ export async function buildApp(config: AppConfig) {
   return {
     fastify,
     io: fastify.io, // Keep returning io for compatibility with tests
-    syncer,
-    watcher,
+    syncManager,
+    geminiCollector,
+    copilotCollector,
     start: () => {
-      watcher.start(config.targetDir);
+      geminiCollector.start();
+      copilotCollector.start();
     },
     stop: async () => {
-      watcher.stop();
+      await geminiCollector.stop();
+      await copilotCollector.stop();
       await fastify.close();
     }
   };

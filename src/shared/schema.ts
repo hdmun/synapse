@@ -11,6 +11,7 @@ export const projectSchema = z.object({
 export const sessionSchema = z.object({
   id: z.string(),
   projectId: z.string(),
+  source: z.string().optional(),
   status: z.string().optional(),
   model: z.string(),
   startTime: z.string(),

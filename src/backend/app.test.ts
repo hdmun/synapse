@@ -17,10 +17,11 @@ describe('App Builder', () => {
   test('buildApp returns required components', () => {
     expect(app.fastify).toBeDefined();
     expect(app.io).toBeDefined();
-    expect(app.syncer).toBeDefined();
-    expect(app.watcher).toBeDefined();
-    expect(app.start).toBeDefined();
-    expect(app.stop).toBeDefined();
+    expect(app.syncManager).toBeDefined();
+    expect(app.geminiCollector).toBeDefined();
+    expect(app.copilotCollector).toBeDefined();
+    expect(typeof app.start).toBe('function');
+    expect(typeof app.stop).toBe('function');
   });
   
   test('fastify app has api routes registered', async () => {

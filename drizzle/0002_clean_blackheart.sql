@@ -1,0 +1,1 @@
+ALTER TABLE `sessions` ADD `source` text DEFAULT 'gemini' NOT NULL;
