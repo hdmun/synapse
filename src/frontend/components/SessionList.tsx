@@ -1,6 +1,5 @@
-import React, { memo, useRef } from 'react';
+import React, { memo, useRef, useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { useShallow } from 'zustand/react/shallow';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SessionSkeleton, EmptyState, ErrorState } from './StatusStates';
 
@@ -22,6 +21,10 @@ const SessionListItem = memo(({
 
   if (!s) return null;
   const isActive = currentSession?.id === s.id;
+
+  const formattedDate = s.lastUpdated 
+    ? new Date(s.lastUpdated).toLocaleString() 
+    : 'Unknown';
 
   return (
     <div
@@ -68,7 +71,7 @@ const SessionListItem = memo(({
             {s.summary}
           </div>
         )}
-        <div className="text-[10px] text-slate-600 mt-2">Recently updated</div>
+        <div className="text-[10px] text-slate-600 mt-2">{formattedDate}</div>
       </button>
     </div>
   );
@@ -78,19 +81,30 @@ SessionListItem.displayName = 'SessionListItem';
 
 export const SessionList = memo(() => {
   const sessionIds = useStore(state => state.sessionIds);
+  const sessionsById = useStore(state => state.sessionsById);
+  const filterAgents = useStore(state => state.filterAgents);
+  const toggleFilterAgent = useStore(state => state.toggleFilterAgent);
   const loading = useStore(state => state.sessionsLoading);
   const error = useStore(state => state.sessionsError);
   const currentProject = useStore(state => state.currentProject);
   const fetchSessions = useStore(state => state.fetchSessions);
 
-  const activeCount = useStore(state => {
-    return state.sessionIds.filter(id => state.sessionsById[id]?.status === 'active').length;
-  });
+  const filteredSessionIds = useMemo(() => {
+    return sessionIds.filter(id => {
+      const s = sessionsById[id];
+      if (!s) return false;
+      return filterAgents.includes(s.source || 'gemini');
+    });
+  }, [sessionIds, sessionsById, filterAgents]);
+
+  const activeCount = useMemo(() => {
+    return filteredSessionIds.filter(id => sessionsById[id]?.status === 'active').length;
+  }, [filteredSessionIds, sessionsById]);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
-    count: sessionIds.length,
+    count: filteredSessionIds.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 110,
     overscan: 5,
@@ -115,12 +129,12 @@ export const SessionList = memo(() => {
       return <ErrorState message={error} onRetry={() => fetchSessions(currentProject.id)} />;
     }
 
-    if (sessionIds.length === 0) {
+    if (filteredSessionIds.length === 0) {
       return (
         <EmptyState 
           icon="session" 
           title="세션이 없습니다" 
-          description="이 프로젝트에 생성된 대화 세션이 아직 없습니다." 
+          description={sessionIds.length > 0 ? "필터 조건에 맞는 세션이 없습니다." : "이 프로젝트에 생성된 대화 세션이 아직 없습니다."} 
         />
       );
     }
@@ -136,7 +150,7 @@ export const SessionList = memo(() => {
         {rowVirtualizer.getVirtualItems().map((virtualItem) => (
           <SessionListItem 
             key={virtualItem.key}
-            id={sessionIds[virtualItem.index]!}
+            id={filteredSessionIds[virtualItem.index]!}
             index={virtualItem.index}
             start={virtualItem.start}
             measureRef={rowVirtualizer.measureElement}
@@ -148,13 +162,38 @@ export const SessionList = memo(() => {
 
   return (
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
-      <div className="p-6 border-b border-slate-800/50 flex justify-between items-center">
-        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
-        {sessionIds.length > 0 && (
-          <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-            {activeCount} Active
-          </span>
-        )}
+      <div className="p-6 border-b border-slate-800/50">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
+          {filteredSessionIds.length > 0 && (
+            <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+              {activeCount} Active
+            </span>
+          )}
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => toggleFilterAgent('gemini')}
+            className={`text-[9px] px-2 py-1 rounded-full font-bold border transition-all ${
+              filterAgents.includes('gemini')
+                ? 'bg-blue-900/30 text-blue-400 border-blue-500/30'
+                : 'bg-slate-800/30 text-slate-600 border-slate-800/50 grayscale'
+            }`}
+          >
+            Gemini
+          </button>
+          <button
+            onClick={() => toggleFilterAgent('copilot')}
+            className={`text-[9px] px-2 py-1 rounded-full font-bold border transition-all ${
+              filterAgents.includes('copilot')
+                ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
+                : 'bg-slate-800/30 text-slate-600 border-slate-800/50 grayscale'
+            }`}
+          >
+            Copilot
+          </button>
+        </div>
       </div>
       <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
         {renderContent()}

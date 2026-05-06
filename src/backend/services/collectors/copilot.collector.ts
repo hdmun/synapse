@@ -1,46 +1,75 @@
 import { Database } from 'bun:sqlite';
 import path from 'path';
+import fs from 'fs';
+import * as chokidar from 'chokidar';
+import type { FSWatcher } from 'chokidar';
 import { BaseCollector } from './base.collector';
 import type { UnifiedSession, UnifiedMessage } from './types';
-import fs from 'fs';
 
 export class CopilotCollector extends BaseCollector {
   private dbPath: string;
-  private pollIntervalMs: number;
-  private intervalId: ReturnType<typeof setInterval> | null = null;
+  private watcher: FSWatcher | null = null;
   private lastCheckedMap = new Map<string, string>(); // sessionId -> max updated_at
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private isPolling = false;
 
-  constructor(pollIntervalMs = 5000) {
+  constructor() {
     super();
-    this.pollIntervalMs = pollIntervalMs;
     const userProfile = process.env.USERPROFILE || process.env.HOME || '';
+    // GitHub Copilot CLI standard path
     this.dbPath = path.join(userProfile, '.copilot', 'session-store.db');
   }
 
   async start(): Promise<void> {
-    if (!fs.existsSync(this.dbPath)) {
-      console.warn(`[CopilotCollector] Copilot database not found at ${this.dbPath}. Waiting for it to be created...`);
-      // We still start polling in case it gets created later.
-    } else {
-      console.log(`[CopilotCollector] Polling Copilot database at: ${this.dbPath}`);
+    const dir = path.dirname(this.dbPath);
+    if (!fs.existsSync(dir)) {
+      console.warn(`[CopilotCollector] Copilot directory not found: ${dir}.`);
+      // We don't return here because the directory might be created later
     }
 
-    this.poll(); // Initial poll
-    this.intervalId = setInterval(() => this.poll(), this.pollIntervalMs);
+    console.log(`[CopilotCollector] Watching Copilot CLI database: ${this.dbPath}`);
+    
+    // Initial sync
+    await this.poll();
+
+    this.watcher = chokidar.watch(this.dbPath, {
+      persistent: true,
+      ignoreInitial: true,
+    });
+
+    this.watcher.on('all', (event) => {
+      if (event === 'add' || event === 'change') {
+        this.debouncePoll();
+      }
+    });
+
+    this.watcher.on('error', (error) => {
+      this.emitError(error);
+    });
   }
 
   async stop(): Promise<void> {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.watcher) {
+      await this.watcher.close();
+      this.watcher = null;
+    }
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
     }
   }
 
+  private debouncePoll() {
+    if (this.debounceTimer) clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.poll(), 500);
+  }
+
   private async poll(): Promise<void> {
+    if (this.isPolling) return;
     if (!fs.existsSync(this.dbPath)) return;
 
+    this.isPolling = true;
     try {
-      // Connect in readonly mode
+      // Connect in readonly mode to prevent locking issues
       const db = new Database(this.dbPath, { readonly: true });
       
       const sessionsQuery = db.query(`
@@ -56,7 +85,6 @@ export class CopilotCollector extends BaseCollector {
         const sessionId = sessionRow.id;
         const updatedAt = sessionRow.updated_at;
         
-        // Skip if not updated since last check
         const lastChecked = this.lastCheckedMap.get(sessionId);
         if (lastChecked && new Date(lastChecked).getTime() >= new Date(updatedAt).getTime()) {
           continue;
@@ -73,7 +101,6 @@ export class CopilotCollector extends BaseCollector {
         const messages: UnifiedMessage[] = [];
         
         for (const turn of turns) {
-          // User message
           if (turn.user_message) {
             messages.push({
               id: `${turn.id}-user`,
@@ -82,14 +109,14 @@ export class CopilotCollector extends BaseCollector {
               timestamp: new Date(turn.timestamp),
             });
           }
-          // Agent message
           if (turn.assistant_response) {
             messages.push({
               id: `${turn.id}-agent`,
               type: 'agent',
               content: turn.assistant_response,
               timestamp: new Date(turn.timestamp),
-              // We don't have token counts in Copilot SQLite by default, leave them undefined
+              inputTokens: turn.user_message ? Math.ceil(turn.user_message.length / 4) : 0,
+              outputTokens: Math.ceil(turn.assistant_response.length / 4),
             });
           }
         }
@@ -99,7 +126,7 @@ export class CopilotCollector extends BaseCollector {
           id: sessionId,
           projectPath: sessionRow.cwd || 'unknown-project',
           summary: sessionRow.summary,
-          model: 'copilot', // Implicit
+          model: 'copilot-cli',
           startTime: new Date(sessionRow.created_at),
           lastUpdated: new Date(sessionRow.updated_at),
           messages,
@@ -111,7 +138,9 @@ export class CopilotCollector extends BaseCollector {
       
       db.close();
     } catch (err: any) {
-      this.emitError(new Error(`[CopilotCollector] DB Poll Error: ${err.message}`));
+      this.emitError(new Error(`[CopilotCollector] DB Sync Error: ${err.message}`));
+    } finally {
+      this.isPolling = false;
     }
   }
 }

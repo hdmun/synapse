@@ -12,14 +12,31 @@ export class SyncManager {
 
   public async syncSession(sessionData: UnifiedSession) {
     try {
-      const projectId = this.deriveProjectId(sessionData.projectPath);
+      const allProjects = await db.select().from(projects);
       
+      // Normalize session path
+      const normalizedSessionPath = path.resolve(sessionData.projectPath).toLowerCase();
+      
+      let projectId = this.deriveProjectId(sessionData.projectPath);
+      let projectPath = sessionData.projectPath;
+
+      // Logic B: Sub-path matching with normalization
+      const parentProject = allProjects.find(p => {
+        const normalizedPPath = path.resolve(p.path).toLowerCase();
+        return normalizedSessionPath.startsWith(normalizedPPath);
+      });
+
+      if (parentProject) {
+        projectId = parentProject.id;
+        projectPath = parentProject.path;
+      }
+
       await db.transaction(async (tx) => {
         // 1. Update Project
         await tx.insert(projects).values({
           id: projectId,
-          path: sessionData.projectPath,
-          name: path.basename(sessionData.projectPath),
+          path: projectPath,
+          name: path.basename(projectPath),
           lastUpdated: sessionData.lastUpdated,
         }).onConflictDoUpdate({
           target: projects.id,
@@ -45,10 +62,15 @@ export class SyncManager {
 
         // 3. Update Messages
         for (const msg of sessionData.messages) {
+          // Normalize type to match schema enum ['user', 'agent', 'gemini', 'info', 'error']
+          let msgType = msg.type;
+          if (msg.type === 'agent' && sessionData.source === 'gemini') msgType = 'gemini';
+          if (msg.type === 'agent' && sessionData.source === 'copilot') msgType = 'agent';
+
           await tx.insert(messages).values({
             id: msg.id,
             sessionId: sessionData.id,
-            type: msg.type,
+            type: msgType as any,
             content: msg.content,
             timestamp: msg.timestamp,
             inputTokens: msg.inputTokens,
@@ -60,7 +82,7 @@ export class SyncManager {
               content: msg.content,
             }
           });
-          
+
           if (msg.thoughts && Array.isArray(msg.thoughts)) {
             for (const thought of msg.thoughts) {
               await tx.insert(thoughts).values({

@@ -14,6 +14,7 @@ interface AppState {
   currentProject: Project | null;
   currentSession: Session | null;
   searchQuery: string;
+  filterAgents: string[];
   
   // 상태 관리
   projectsLoading: boolean;
@@ -29,6 +30,7 @@ interface AppState {
   setCurrentProject: (project: Project | null) => void;
   setCurrentSession: (session: Session | null) => void;
   setSearchQuery: (query: string) => void;
+  toggleFilterAgent: (agent: string) => void;
 
   // Delta Updates
   addMessage: (sessionId: string, message: Message) => void;
@@ -54,6 +56,7 @@ export const useStore = create<AppState>((set, get) => ({
   currentProject: null,
   currentSession: null,
   searchQuery: '',
+  filterAgents: ['gemini', 'copilot'],
   
   projectsLoading: false,
   projectsError: null,
@@ -95,6 +98,11 @@ export const useStore = create<AppState>((set, get) => ({
   setCurrentProject: (currentProject) => set({ currentProject }),
   setCurrentSession: (currentSession) => set({ currentSession }),
   setSearchQuery: (searchQuery) => set({ searchQuery }),
+  toggleFilterAgent: (agent) => set((state) => ({
+    filterAgents: state.filterAgents.includes(agent)
+      ? state.filterAgents.filter(a => a !== agent)
+      : [...state.filterAgents, agent]
+  })),
 
   addMessage: (sessionId, message) => set((state) => {
     if (state.currentSession?.id === sessionId) {

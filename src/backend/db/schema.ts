@@ -42,7 +42,7 @@ export const sessionsRelations = relations(sessions, ({ one, many }) => ({
 export const messages = sqliteTable('messages', {
   id: text('id').primaryKey(), // messageId (UUID)
   sessionId: text('session_id').references(() => sessions.id),
-  type: text('type', { enum: ['user', 'gemini', 'info', 'error'] }).notNull(),
+  type: text('type', { enum: ['user', 'agent', 'gemini', 'info', 'error'] }).notNull(),
   content: text('content').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
   // Gemini 전용 필드
