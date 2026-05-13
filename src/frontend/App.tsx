@@ -45,7 +45,11 @@ export const App = () => {
   useEffect(() => {
     fetchProjects();
     
-    const socket = io();
+    // Force websocket transport to bypass Fastify HTTP polling 404s and Bun polyfill issues.
+    // Use the default proxy path to keep environment consistency.
+    const socket = io({
+      transports: ['websocket']
+    });
 
     socket.on('connect', () => setIsConnected(true));
     socket.on('disconnect', () => setIsConnected(false));

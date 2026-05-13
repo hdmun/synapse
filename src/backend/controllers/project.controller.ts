@@ -4,8 +4,21 @@ import { desc, eq } from 'drizzle-orm';
 import { extractMessageSummary } from '../utils/message-utils';
 
 export async function getProjects() {
-  return await db.query.projects.findMany({
-    orderBy: [desc(projects.lastUpdated)]
+  const allProjects = await db.query.projects.findMany({
+    orderBy: [desc(projects.lastUpdated)],
+    with: {
+      sessions: {
+        columns: {
+          source: true
+        }
+      }
+    }
+  });
+
+  return allProjects.map(p => {
+    const agents = Array.from(new Set(p.sessions.map(s => s.source).filter(Boolean)));
+    const { sessions, ...projectData } = p;
+    return { ...projectData, agents };
   });
 }
 

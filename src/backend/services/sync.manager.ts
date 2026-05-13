@@ -2,6 +2,7 @@ import { db } from '../db';
 import { projects, sessions, messages, thoughts, toolCalls } from '../db/schema';
 import type { UnifiedSession } from './collectors/types';
 import path from 'path';
+import crypto from 'crypto';
 
 export class SyncManager {
   private onUpdate?: (sessionId: string, data: any) => void;
@@ -12,35 +13,30 @@ export class SyncManager {
 
   public async syncSession(sessionData: UnifiedSession) {
     try {
-      const allProjects = await db.select().from(projects);
-      
-      // Normalize session path
-      const normalizedSessionPath = path.resolve(sessionData.projectPath).toLowerCase();
-      
-      let projectId = this.deriveProjectId(sessionData.projectPath);
-      let projectPath = sessionData.projectPath;
-
-      // Logic B: Sub-path matching with normalization
-      const parentProject = allProjects.find(p => {
-        const normalizedPPath = path.resolve(p.path).toLowerCase();
-        return normalizedSessionPath.startsWith(normalizedPPath);
-      });
-
-      if (parentProject) {
-        projectId = parentProject.id;
-        projectPath = parentProject.path;
+      const projectId = this.deriveProjectId(sessionData.projectPath);
+      // We will normalize the path before saving it to the DB so that the project path is consistent
+      let normalizedPath = path.resolve(sessionData.projectPath);
+      normalizedPath = normalizedPath.replace(/\\/g, '/');
+      if (process.platform === 'win32' || process.platform === 'darwin') {
+        normalizedPath = normalizedPath.toLowerCase();
       }
+
+      const projectPath = normalizedPath;
+      const projectName = path.basename(sessionData.projectPath);
 
       await db.transaction(async (tx) => {
         // 1. Update Project
         await tx.insert(projects).values({
           id: projectId,
           path: projectPath,
-          name: path.basename(projectPath),
+          name: projectName,
           lastUpdated: sessionData.lastUpdated,
         }).onConflictDoUpdate({
           target: projects.id,
-          set: { lastUpdated: sessionData.lastUpdated }
+          set: { 
+            lastUpdated: sessionData.lastUpdated,
+            name: projectName // Update name in case it changed
+          }
         });
 
         // 2. Update Session
@@ -54,18 +50,21 @@ export class SyncManager {
           summary: sessionData.summary,
         }).onConflictDoUpdate({
           target: sessions.id,
-          set: { 
+          set: {
             lastUpdated: sessionData.lastUpdated,
             summary: sessionData.summary,
+            source: sessionData.source, // Update source in case it's missing or changed
           }
         });
 
         // 3. Update Messages
         for (const msg of sessionData.messages) {
-          // Normalize type to match schema enum ['user', 'agent', 'gemini', 'info', 'error']
+          // Normalize type to match schema enum
           let msgType = msg.type;
-          if (msg.type === 'agent' && sessionData.source === 'gemini') msgType = 'gemini';
-          if (msg.type === 'agent' && sessionData.source === 'copilot') msgType = 'agent';
+          // Standardize all AI replies as 'agent' type
+          if (msg.type === 'agent' || msg.type === 'gemini') {
+            msgType = 'agent';
+          }
 
           await tx.insert(messages).values({
             id: msg.id,
@@ -101,14 +100,14 @@ export class SyncManager {
                 messageId: msg.id,
                 name: tc.name,
                 args: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args),
-                result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result),
+                result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result), 
                 status: tc.status,
                 timestamp: new Date(tc.timestamp),
               }).onConflictDoUpdate({
                 target: toolCalls.id,
-                set: { 
-                  result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result), 
-                  status: tc.status 
+                set: {
+                  result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result),
+                  status: tc.status
                 }
               });
             }
@@ -125,6 +124,11 @@ export class SyncManager {
   }
 
   private deriveProjectId(projectPath: string): string {
-    return path.basename(projectPath);
+    let normalized = path.resolve(projectPath);
+    normalized = normalized.replace(/\\/g, '/');
+    if (process.platform === 'win32' || process.platform === 'darwin') {
+      normalized = normalized.toLowerCase();
+    }
+    return crypto.createHash('sha256').update(normalized).digest('hex');
   }
 }

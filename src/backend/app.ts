@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
-import { socketPlugin } from './plugins/socket';
+import socketio from 'fastify-socket.io';
 import apiRoutes from './routes/api';
 import { SyncManager } from './services/sync.manager';
 import { GeminiCollector } from './services/collectors/gemini.collector';
@@ -17,8 +17,10 @@ export interface AppConfig {
 export async function buildApp(config: AppConfig) {
   const fastify = Fastify({ logger: !config.isTest });
   
-  // Register Socket.io plugin
-  await fastify.register(socketPlugin as any, { socketOptions: { cors: { origin: '*' } } });
+  // Register Socket.io plugin using the official fastify-socket.io
+  await fastify.register(socketio, {
+    cors: { origin: '*' }
+  });
   
   await fastify.register(cors);
   await fastify.register(apiRoutes);

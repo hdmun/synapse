@@ -6,6 +6,7 @@ export const projectSchema = z.object({
   path: z.string(),
   progress: z.number().min(0).max(100),
   lastUpdated: z.string().optional(),
+  agents: z.array(z.string()).optional(),
 });
 
 export const sessionSchema = z.object({

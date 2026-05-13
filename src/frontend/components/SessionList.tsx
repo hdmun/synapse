@@ -2,6 +2,7 @@ import React, { memo, useRef, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SessionSkeleton, EmptyState, ErrorState } from './StatusStates';
+import { getAgentConfig } from '../constants/agents';
 
 const SessionListItem = memo(({ 
   id, 
@@ -26,6 +27,8 @@ const SessionListItem = memo(({
     ? new Date(s.lastUpdated).toLocaleString() 
     : 'Unknown';
 
+  const agentConfig = getAgentConfig(s.source || 'unknown');
+
   return (
     <div
       data-index={index}
@@ -49,12 +52,8 @@ const SessionListItem = memo(({
             <span className={`font-bold text-xs ${isActive ? 'text-indigo-400' : 'text-slate-300'}`}>
               #{s.id.slice(0, 8).toUpperCase()}
             </span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${
-              s.source === 'copilot' 
-                ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
-                : 'bg-blue-900/30 text-blue-400 border-blue-500/30'
-            }`}>
-              {s.source === 'copilot' ? 'Copilot' : 'Gemini'}
+            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold border ${agentConfig.bgThemeClass} ${agentConfig.themeColorClass} ${agentConfig.borderThemeClass}`}>
+              {agentConfig.name}
             </span>
           </div>
           <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${
@@ -83,7 +82,6 @@ export const SessionList = memo(() => {
   const sessionIds = useStore(state => state.sessionIds);
   const sessionsById = useStore(state => state.sessionsById);
   const filterAgents = useStore(state => state.filterAgents);
-  const toggleFilterAgent = useStore(state => state.toggleFilterAgent);
   const loading = useStore(state => state.sessionsLoading);
   const error = useStore(state => state.sessionsError);
   const currentProject = useStore(state => state.currentProject);
@@ -93,7 +91,7 @@ export const SessionList = memo(() => {
     return sessionIds.filter(id => {
       const s = sessionsById[id];
       if (!s) return false;
-      return filterAgents.includes(s.source || 'gemini');
+      return filterAgents.includes(s.source || 'unknown');
     });
   }, [sessionIds, sessionsById, filterAgents]);
 
@@ -163,36 +161,13 @@ export const SessionList = memo(() => {
   return (
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
       <div className="p-6 border-b border-slate-800/50">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
           {filteredSessionIds.length > 0 && (
             <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
               {activeCount} Active
             </span>
           )}
-        </div>
-        
-        <div className="flex gap-2">
-          <button
-            onClick={() => toggleFilterAgent('gemini')}
-            className={`text-[9px] px-2 py-1 rounded-full font-bold border transition-all ${
-              filterAgents.includes('gemini')
-                ? 'bg-blue-900/30 text-blue-400 border-blue-500/30'
-                : 'bg-slate-800/30 text-slate-600 border-slate-800/50 grayscale'
-            }`}
-          >
-            Gemini
-          </button>
-          <button
-            onClick={() => toggleFilterAgent('copilot')}
-            className={`text-[9px] px-2 py-1 rounded-full font-bold border transition-all ${
-              filterAgents.includes('copilot')
-                ? 'bg-purple-900/30 text-purple-400 border-purple-500/30'
-                : 'bg-slate-800/30 text-slate-600 border-slate-800/50 grayscale'
-            }`}
-          >
-            Copilot
-          </button>
         </div>
       </div>
       <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
