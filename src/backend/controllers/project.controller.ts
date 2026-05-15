@@ -1,6 +1,6 @@
 import { db } from '../db';
-import { projects, sessions } from '../db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { projects, sessions, messages } from '../db/schema';
+import { desc, eq, sql } from 'drizzle-orm';
 import { extractMessageSummary } from '../utils/message-utils';
 
 export async function getProjects() {
@@ -23,37 +23,49 @@ export async function getProjects() {
 }
 
 export async function getProjectSessions(projectId: string) {
-  const sessionList = await db.query.sessions.findMany({
-    where: eq(sessions.projectId, projectId),
-    orderBy: [desc(sessions.lastUpdated)],
-    with: {
-      messages: {
-        orderBy: (msgs, { asc }) => [asc(msgs.timestamp)],
-        limit: 1,
-      }
-    }
-  });
+  // Use a query with left join for message count
+  const sessionList = await db.select({
+    id: sessions.id,
+    projectId: sessions.projectId,
+    source: sessions.source,
+    startTime: sessions.startTime,
+    lastUpdated: sessions.lastUpdated,
+    status: sessions.status,
+    model: sessions.model,
+    summary: sessions.summary,
+    totalTokens: sessions.totalTokens,
+    messageCount: sql<number>`COUNT(${messages.id})`
+  })
+  .from(sessions)
+  .leftJoin(messages, eq(messages.sessionId, sessions.id))
+  .where(eq(sessions.projectId, projectId))
+  .groupBy(sessions.id)
+  .orderBy(desc(sessions.lastUpdated));
 
-  const sessionsWithSummary = await Promise.all(sessionList.map(async (s) => {
+  // Backfill summaries if needed while processing results
+  const result = await Promise.all(sessionList.map(async (s) => {
     const hasValidSummary = s.summary && !s.summary.trim().startsWith('{') && !s.summary.trim().startsWith('[');
     
-    if (hasValidSummary) {
-      const { messages, ...sessionData } = s;
-      return sessionData;
+    if (hasValidSummary || s.messageCount === 0) {
+      return s;
     }
 
-    let summary = s.summary;
-    if (s.messages && s.messages.length > 0 && s.messages[0]) {
-      const extracted = extractMessageSummary(s.messages[0].content);
-      if (extracted) {
-        summary = extracted;
+    // Attempt to backfill summary from the first message
+    const firstMsg = await db.query.messages.findFirst({
+      where: eq(messages.sessionId, s.id),
+      orderBy: (msgs, { asc }) => [asc(msgs.timestamp)]
+    });
+
+    if (firstMsg) {
+      const summary = extractMessageSummary(firstMsg.content);
+      if (summary) {
         await db.update(sessions).set({ summary }).where(eq(sessions.id, s.id));
+        return { ...s, summary };
       }
     }
     
-    const { messages, ...sessionData } = s;
-    return { ...sessionData, summary };
+    return s;
   }));
 
-  return sessionsWithSummary;
+  return result;
 }

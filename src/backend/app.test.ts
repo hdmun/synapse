@@ -5,7 +5,7 @@ describe('App Builder', () => {
   let app: any;
 
   beforeAll(async () => {
-    app = await buildApp({ targetDir: '/tmp/test', isTest: true });
+    app = await buildApp({ targetDir: '/tmp/test', codexDir: '/tmp/codex', isTest: true });
   });
 
   afterAll(async () => {
@@ -20,6 +20,7 @@ describe('App Builder', () => {
     expect(app.syncManager).toBeDefined();
     expect(app.geminiCollector).toBeDefined();
     expect(app.copilotCollector).toBeDefined();
+    expect(app.codexCollector).toBeDefined();
     expect(typeof app.start).toBe('function');
     expect(typeof app.stop).toBe('function');
   });

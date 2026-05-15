@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bot, BrainCircuit, MessageSquare } from 'lucide-react';
+import { Sparkles, Bot, BrainCircuit } from 'lucide-react';
 
 export interface AgentConfig {
   id: string;
@@ -35,13 +35,13 @@ export const AGENTS: Record<string, AgentConfig> = {
     bgThemeClass: 'bg-orange-900/30',
     borderThemeClass: 'border-orange-500/30'
   },
-  chatgpt: {
-    id: 'chatgpt',
-    name: 'ChatGPT',
-    icon: MessageSquare,
-    themeColorClass: 'text-emerald-400',
-    bgThemeClass: 'bg-emerald-900/30',
-    borderThemeClass: 'border-emerald-500/30'
+  codex: {
+    id: 'codex',
+    name: 'Codex',
+    icon: Bot,
+    themeColorClass: 'text-amber-400',
+    bgThemeClass: 'bg-amber-900/30',
+    borderThemeClass: 'border-amber-500/30'
   }
 };
 

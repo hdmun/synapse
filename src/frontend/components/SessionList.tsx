@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SessionSkeleton, EmptyState, ErrorState } from './StatusStates';
 import { getAgentConfig } from '../constants/agents';
+import { Filter, Eye, EyeOff } from 'lucide-react';
 
 const SessionListItem = memo(({ 
   id, 
@@ -70,7 +71,14 @@ const SessionListItem = memo(({
             {s.summary}
           </div>
         )}
-        <div className="text-[10px] text-slate-600 mt-2">{formattedDate}</div>
+        <div className="flex justify-between items-center mt-2">
+          <div className="text-[10px] text-slate-600">{formattedDate}</div>
+          {s.messageCount !== undefined && (
+            <div className="text-[9px] font-bold text-slate-500 bg-slate-800/50 px-1.5 py-0.5 rounded-md">
+              {s.messageCount} msgs
+            </div>
+          )}
+        </div>
       </button>
     </div>
   );
@@ -82,6 +90,8 @@ export const SessionList = memo(() => {
   const sessionIds = useStore(state => state.sessionIds);
   const sessionsById = useStore(state => state.sessionsById);
   const filterAgents = useStore(state => state.filterAgents);
+  const showEmptySessions = useStore(state => state.showEmptySessions);
+  const toggleShowEmptySessions = useStore(state => state.toggleShowEmptySessions);
   const loading = useStore(state => state.sessionsLoading);
   const error = useStore(state => state.sessionsError);
   const currentProject = useStore(state => state.currentProject);
@@ -91,9 +101,13 @@ export const SessionList = memo(() => {
     return sessionIds.filter(id => {
       const s = sessionsById[id];
       if (!s) return false;
-      return filterAgents.includes(s.source || 'unknown');
+      
+      const agentMatch = filterAgents.includes(s.source || 'unknown');
+      const emptyMatch = showEmptySessions || (s.messageCount !== undefined && s.messageCount > 0);
+      
+      return agentMatch && emptyMatch;
     });
-  }, [sessionIds, sessionsById, filterAgents]);
+  }, [sessionIds, sessionsById, filterAgents, showEmptySessions]);
 
   const activeCount = useMemo(() => {
     return filteredSessionIds.filter(id => sessionsById[id]?.status === 'active').length;
@@ -161,13 +175,33 @@ export const SessionList = memo(() => {
   return (
     <div className="w-80 h-full border-r border-slate-800/50 flex flex-col bg-slate-900/30">
       <div className="p-6 border-b border-slate-800/50">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Chat Sessions</h3>
           {filteredSessionIds.length > 0 && (
             <span className="text-[9px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
               {activeCount} Active
             </span>
           )}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => toggleShowEmptySessions()}
+            className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border transition-all text-[11px] font-medium ${
+              showEmptySessions 
+              ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300' 
+              : 'bg-slate-800/40 border-slate-700/50 text-slate-400 hover:bg-slate-800/60'
+            }`}
+            title={showEmptySessions ? "내용 없는 세션 숨기기" : "내용 없는 세션 표시"}
+          >
+            {showEmptySessions ? <Eye size={14} /> : <EyeOff size={14} />}
+            <span>{showEmptySessions ? 'Show All' : 'Hide Empty'}</span>
+          </button>
+          
+          <div className="flex items-center gap-1 text-[10px] text-slate-500">
+            <Filter size={12} />
+            <span>{filteredSessionIds.length} / {sessionIds.length}</span>
+          </div>
         </div>
       </div>
       <div ref={parentRef} className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">

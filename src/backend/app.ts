@@ -6,11 +6,13 @@ import apiRoutes from './routes/api';
 import { SyncManager } from './services/sync.manager';
 import { GeminiCollector } from './services/collectors/gemini.collector';
 import { CopilotCollector } from './services/collectors/copilot.collector';
+import { CodexCollector } from './services/collectors/codex.collector';
 import { initDb } from './db';
 import { AppError } from './utils/errors';
 
 export interface AppConfig {
   targetDir: string;
+  codexDir?: string;
   isTest?: boolean;
 }
 
@@ -74,6 +76,13 @@ export async function buildApp(config: AppConfig) {
   copilotCollector.on('session-update', (session) => syncManager.syncSession(session));
   copilotCollector.on('error', (err) => fastify.log.error(`[CopilotCollector] Error: ${err}`));
 
+  let codexCollector: CodexCollector | undefined;
+  if (config.codexDir) {
+    codexCollector = new CodexCollector(config.codexDir);
+    codexCollector.on('session-update', (session) => syncManager.syncSession(session));
+    codexCollector.on('error', (err) => fastify.log.error(`[CodexCollector] Error: ${err}`));
+  }
+
   if (!config.isTest) {
     fastify.io.on('connection', (socket) => {
       console.log('Client connected:', socket.id);
@@ -86,13 +95,20 @@ export async function buildApp(config: AppConfig) {
     syncManager,
     geminiCollector,
     copilotCollector,
+    codexCollector,
     start: () => {
       geminiCollector.start();
       copilotCollector.start();
+      if (codexCollector) {
+        codexCollector.start();
+      }
     },
     stop: async () => {
       await geminiCollector.stop();
       await copilotCollector.stop();
+      if (codexCollector) {
+        await codexCollector.stop();
+      }
       await fastify.close();
     }
   };

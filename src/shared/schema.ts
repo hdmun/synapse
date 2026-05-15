@@ -18,6 +18,7 @@ export const sessionSchema = z.object({
   startTime: z.string(),
   lastUpdated: z.string(),
   summary: z.string().optional(),
+  messageCount: z.number().optional(),
 });
 
 export const thoughtSchema = z.object({

@@ -15,6 +15,7 @@ interface AppState {
   currentSession: Session | null;
   searchQuery: string;
   filterAgents: string[];
+  showEmptySessions: boolean;
   
   // 상태 관리
   projectsLoading: boolean;
@@ -31,6 +32,7 @@ interface AppState {
   setCurrentSession: (session: Session | null) => void;
   setSearchQuery: (query: string) => void;
   toggleFilterAgent: (agent: string) => void;
+  toggleShowEmptySessions: () => void;
 
   // Delta Updates
   addMessage: (sessionId: string, message: Message) => void;
@@ -53,10 +55,10 @@ export const useStore = create<AppState>((set, get) => ({
   messagesById: {},
   messageIds: [],
 
-  currentProject: null,
   currentSession: null,
   searchQuery: '',
-  filterAgents: ['gemini', 'copilot'],
+  filterAgents: ['gemini', 'copilot', 'codex'],
+  showEmptySessions: false,
   
   projectsLoading: false,
   projectsError: null,
@@ -102,6 +104,10 @@ export const useStore = create<AppState>((set, get) => ({
     filterAgents: state.filterAgents.includes(agent)
       ? state.filterAgents.filter(a => a !== agent)
       : [...state.filterAgents, agent]
+  })),
+
+  toggleShowEmptySessions: () => set((state) => ({
+    showEmptySessions: !state.showEmptySessions
   })),
 
   addMessage: (sessionId, message) => set((state) => {
