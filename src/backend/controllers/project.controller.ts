@@ -22,7 +22,49 @@ export async function getProjects() {
   });
 }
 
+export async function getTokenStats() {
+  const stats = await db.select({
+    projectName: projects.name,
+    totalTokens: sql<number>`SUM(${sessions.totalTokens})`
+  })
+  .from(projects)
+  .leftJoin(sessions, eq(sessions.projectId, projects.id))
+  .groupBy(projects.id, projects.name)
+  .orderBy(desc(sql<number>`SUM(${sessions.totalTokens})`));
+
+  return stats.map(s => ({
+    name: s.projectName,
+    tokens: s.totalTokens || 0
+  }));
+}
+
+export async function getActivityStats() {
+  const stats = await db.select({
+    date: sql<string>`strftime('%Y-%m-%d', datetime(${sessions.startTime} / 1000, 'unixepoch'))`,
+    count: sql<number>`count(${sessions.id})`
+  })
+  .from(sessions)
+  .groupBy(sql`strftime('%Y-%m-%d', datetime(${sessions.startTime} / 1000, 'unixepoch'))`)
+  .orderBy(sql`strftime('%Y-%m-%d', datetime(${sessions.startTime} / 1000, 'unixepoch'))`);
+
+  return stats.map(s => {
+    const c = Number(s.count);
+    let level = 0;
+    if (c > 0) level = 1;
+    if (c > 3) level = 2;
+    if (c > 6) level = 3;
+    if (c > 10) level = 4;
+    
+    return {
+      date: s.date,
+      count: c,
+      level
+    };
+  });
+}
+
 export async function getProjectSessions(projectId: string) {
+
   // Use a query with left join for message count
   const sessionList = await db.select({
     id: sessions.id,

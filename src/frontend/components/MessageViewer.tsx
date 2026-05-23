@@ -2,8 +2,62 @@ import React, { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Search, Zap, Terminal, Cpu, FileText, Image as ImageIcon, Copy, ExternalLink, ChevronDown, ChevronRight, File, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { EmptyState, ErrorState, MessageSkeleton } from './StatusStates';
+
+const ToolCallCard = ({ name, args }: { name: string, args: any }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mt-2 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+      <button 
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+      >
+        <div className="flex items-center gap-2.5">
+          <Zap size={14} className="text-amber-500" />
+          <span className="text-[11px] font-bold text-amber-500 uppercase tracking-wider">Tool Call: {name}</span>
+        </div>
+        {expanded ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
+      </button>
+      {expanded && (
+        <div className="px-4 pb-4 pt-2 border-t border-slate-800/50">
+          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
+            {JSON.stringify(args, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ToolResponseCard = ({ name, response }: { name: string, response: any }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mt-2 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+      <button 
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+      >
+        <div className="flex items-center gap-2.5">
+          <Terminal size={14} className="text-emerald-500" />
+          <span className="text-[11px] font-bold text-emerald-500 uppercase tracking-wider">Tool Result: {name}</span>
+        </div>
+        {expanded ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
+      </button>
+      {expanded && (
+        <div className="px-4 pb-4 pt-2 border-t border-slate-800/50">
+          <pre className="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
+            {JSON.stringify(response, null, 2)}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const MessageListItem = memo(({ 
   id, 
@@ -121,29 +175,9 @@ const MessageListItem = memo(({
               </div>
             );
           } else if (part.function_call) {
-            content = (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
-                  <Zap size={12} />
-                  <span>Function Call: {part.function_call.name}</span>
-                </div>
-                <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
-                  {JSON.stringify(part.function_call.args, null, 2)}
-                </pre>
-              </div>
-            );
+            content = <ToolCallCard name={part.function_call.name} args={part.function_call.args} />;
           } else if (part.function_response) {
-            content = (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
-                  <Terminal size={12} />
-                  <span>Function Response: {part.function_response.name}</span>
-                </div>
-                <pre className="bg-slate-900 border border-slate-700 rounded-lg p-3 overflow-x-auto text-[11px] font-mono text-slate-300">
-                  {JSON.stringify(part.function_response.response, null, 2)}
-                </pre>
-              </div>
-            );
+            content = <ToolResponseCard name={part.function_response.name} response={part.function_response.response} />;
           } else {
             content = <pre className="whitespace-pre-wrap text-[11px]">{JSON.stringify(part, null, 2)}</pre>;
           }
@@ -361,6 +395,31 @@ export const MessageViewer = memo(() => {
                       </div>
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Created At</span>
+                        <span className="text-sm text-slate-300">{new Date(currentSession.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Message Count</span>
+                        <span className="text-sm text-slate-300">{messageIds.length} messages</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+          </div>
+      </div>
+
+      <main 
+        ref={parentRef}
+        className="flex-1 overflow-y-auto p-8 relative custom-scrollbar"
+      >
+        {renderMainContent()}
+      </main>
+    </div>
+  );
+});
+
+MessageViewer.displayName = 'MessageViewer';
+           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Created At</span>
                         <span className="text-sm text-slate-300">{new Date(currentSession.createdAt).toLocaleString()}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">

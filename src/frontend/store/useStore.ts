@@ -43,6 +43,16 @@ interface AppState {
   fetchProjects: () => Promise<void>;
   fetchSessions: (projectId: string) => Promise<void>;
   fetchMessages: (sessionId: string) => Promise<void>;
+  
+  tokenStats: { name: string, tokens: number }[];
+  tokenStatsLoading: boolean;
+  tokenStatsError: string | null;
+  fetchTokenStats: () => Promise<void>;
+
+  activityStats: { date: string, count: number, level: number }[];
+  activityStatsLoading: boolean;
+  activityStatsError: string | null;
+  fetchActivityStats: () => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -55,6 +65,7 @@ export const useStore = create<AppState>((set, get) => ({
   messagesById: {},
   messageIds: [],
 
+  currentProject: null,
   currentSession: null,
   searchQuery: '',
   filterAgents: ['gemini', 'copilot', 'codex'],
@@ -66,6 +77,14 @@ export const useStore = create<AppState>((set, get) => ({
   sessionsError: null,
   messagesLoading: false,
   messagesError: null,
+
+  tokenStats: [],
+  tokenStatsLoading: false,
+  tokenStatsError: null,
+
+  activityStats: [],
+  activityStatsLoading: false,
+  activityStatsError: null,
 
   setProjects: (projects) => {
     const projectsById: Record<string, Project> = {};
@@ -193,6 +212,34 @@ export const useStore = create<AppState>((set, get) => ({
       set({ messagesError: err.message });
     } finally {
       set({ messagesLoading: false });
+    }
+  },
+
+  fetchTokenStats: async () => {
+    set({ tokenStatsLoading: true, tokenStatsError: null });
+    try {
+      const res = await fetch('/api/stats/tokens');
+      if (!res.ok) throw new Error('Failed to fetch token stats');
+      const data = await res.json();
+      set({ tokenStats: data });
+    } catch (err: any) {
+      set({ tokenStatsError: err.message });
+    } finally {
+      set({ tokenStatsLoading: false });
+    }
+  },
+
+  fetchActivityStats: async () => {
+    set({ activityStatsLoading: true, activityStatsError: null });
+    try {
+      const res = await fetch('/api/stats/activity');
+      if (!res.ok) throw new Error('Failed to fetch activity stats');
+      const data = await res.json();
+      set({ activityStats: data });
+    } catch (err: any) {
+      set({ activityStatsError: err.message });
+    } finally {
+      set({ activityStatsLoading: false });
     }
   },
 }));

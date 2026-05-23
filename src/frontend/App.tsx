@@ -7,20 +7,13 @@ import { SessionList } from './components/SessionList';
 import { ThemeProvider } from './components/theme-provider';
 import { SidebarProvider } from './components/layout/sidebar-context';
 import { ClientLayout } from './components/layout/client-layout';
+import { Dashboard } from './components/Dashboard';
 import type { SocketUpdatePayload } from '../shared/schema';
 import { AlertCircle, RefreshCw, Activity, Cpu, Bell, Search } from 'lucide-react';
 
-const MessageViewer = lazy(() => import('./components/MessageViewer').then(m => ({ default: m.MessageViewer })));
+import { CommandPalette } from './components/CommandPalette';
 
-function Dashboard() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-8 text-center h-full">
-      <Cpu size={48} className="mb-4 opacity-50 text-indigo-400" />
-      <h2 className="text-2xl font-bold text-slate-300 mb-2">Welcome to Synapse</h2>
-      <p>Select Projects or Sessions from the sidebar to begin.</p>
-    </div>
-  );
-}
+const MessageViewer = lazy(() => import('./components/MessageViewer').then(m => ({ default: m.MessageViewer })));
 
 function Loading() {
   return (
@@ -80,6 +73,7 @@ export const App = () => {
 
   return (
     <BrowserRouter>
+      <CommandPalette />
       <ThemeProvider>
         <SidebarProvider>
           <ClientLayout>
