@@ -19,8 +19,7 @@ export class GeminiCollector extends BaseCollector {
   async start(): Promise<void> {
     console.log(`[GeminiCollector] Watching directory: ${this.targetDir}`);
     
-    // In a full implementation, we'd also scan initial files.
-    // For now, let's keep it simple to ensure the architecture stands up.
+    await this.scanInitialFiles(this.targetDir);
 
     this.watcher = chokidar.watch(this.targetDir, {
       ignored: /(^|[\/\\])\../,
@@ -32,6 +31,22 @@ export class GeminiCollector extends BaseCollector {
       .on('add', (filePath: string) => this.handleFileChange(filePath))
       .on('change', (filePath: string) => this.handleFileChange(filePath))
       .on('error', (error: any) => this.emitError(error));
+  }
+
+  private async scanInitialFiles(targetDir: string) {
+    console.log(`[GeminiCollector] Scanning initial files in: ${targetDir}`);
+    
+    // Bun.glob 사용 (Bun v1.1+)
+    // @ts-ignore: Bun.Glob exists in Bun environment
+    const glob = new (require('bun').Glob)(`**/*.{json,jsonl}`);
+    
+    for await (const file of glob.scan({ cwd: targetDir, onlyFiles: true })) {
+      const filePath = path.join(targetDir, file as string);
+      if (filePath.includes('chats') || path.basename(filePath) === 'logs.json') {
+        this.handleFileChange(filePath);
+      }
+    }
+    console.log(`[GeminiCollector] Initial scanning complete.`);
   }
 
   async stop(): Promise<void> {
