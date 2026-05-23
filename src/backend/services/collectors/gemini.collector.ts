@@ -21,24 +21,32 @@ export class GeminiCollector extends BaseCollector {
     
     await this.scanInitialFiles(this.targetDir);
 
-    this.watcher = chokidar.watch(this.targetDir, {
-      ignored: /(^|[\/\\])\../,
-      persistent: true,
-      ignoreInitial: true,
-    });
+    return new Promise((resolve, reject) => {
+      this.watcher = chokidar.watch(this.targetDir, {
+        ignored: /(^|[\/\\])\../,
+        persistent: true,
+        ignoreInitial: true,
+      });
 
-    this.watcher
-      .on('add', (filePath: string) => this.handleFileChange(filePath))
-      .on('change', (filePath: string) => this.handleFileChange(filePath))
-      .on('error', (error: any) => this.emitError(error));
+      this.watcher
+        .on('add', (filePath: string) => this.handleFileChange(filePath))
+        .on('change', (filePath: string) => this.handleFileChange(filePath))
+        .on('error', (error: any) => {
+          this.emitError(error);
+          reject(error);
+        })
+        .on('ready', () => {
+          console.log(`[GeminiCollector] Watcher ready.`);
+          resolve();
+        });
+    });
   }
 
   private async scanInitialFiles(targetDir: string) {
     console.log(`[GeminiCollector] Scanning initial files in: ${targetDir}`);
     
     // Bun.glob 사용 (Bun v1.1+)
-    // @ts-ignore: Bun.Glob exists in Bun environment
-    const glob = new (require('bun').Glob)(`**/*.{json,jsonl}`);
+    const glob = new Bun.Glob(`**/*.{json,jsonl}`);
     
     for await (const file of glob.scan({ cwd: targetDir, onlyFiles: true })) {
       const filePath = path.join(targetDir, file as string);

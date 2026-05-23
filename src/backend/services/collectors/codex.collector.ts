@@ -36,16 +36,25 @@ export class CodexCollector extends BaseCollector {
       this.handleFileChange(filePath);
     }
 
-    this.watcher = chokidar.watch(this.targetDir, {
-      ignored: /(^|[\/\\])\../,
-      persistent: true,
-      ignoreInitial: true,
-    });
+    return new Promise((resolve, reject) => {
+      this.watcher = chokidar.watch(this.targetDir, {
+        ignored: /(^|[\/\\])\../,
+        persistent: true,
+        ignoreInitial: true,
+      });
 
-    this.watcher
-      .on('add', (filePath: string) => this.handleFileChange(filePath))
-      .on('change', (filePath: string) => this.handleFileChange(filePath))
-      .on('error', (error: any) => this.emitError(error));
+      this.watcher
+        .on('add', (filePath: string) => this.handleFileChange(filePath))
+        .on('change', (filePath: string) => this.handleFileChange(filePath))
+        .on('error', (error: any) => {
+          this.emitError(error);
+          reject(error);
+        })
+        .on('ready', () => {
+          console.log(`[CodexCollector] Watcher ready.`);
+          resolve();
+        });
+    });
   }
 
   async stop(): Promise<void> {

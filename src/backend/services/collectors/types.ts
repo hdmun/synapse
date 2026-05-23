@@ -11,7 +11,7 @@ export interface UnifiedMessage {
 }
 
 export interface UnifiedSession {
-  source: 'gemini' | 'copilot' | 'codex';
+  source: 'gemini' | 'copilot' | 'codex' | 'claude';
   id: string;
   projectPath: string; // Used to derive projectId/projectHash
   summary?: string;

@@ -7,6 +7,7 @@ import { SyncManager } from './services/sync.manager';
 import { GeminiCollector } from './services/collectors/gemini.collector';
 import { CopilotCollector } from './services/collectors/copilot.collector';
 import { CodexCollector } from './services/collectors/codex.collector';
+import { ClaudeCollector } from './services/collectors/claude.collector';
 import { initDb } from './db';
 import { AppError } from './utils/errors';
 
@@ -76,6 +77,10 @@ export async function buildApp(config: AppConfig) {
   copilotCollector.on('session-update', (session) => syncManager.syncSession(session));
   copilotCollector.on('error', (err) => fastify.log.error(`[CopilotCollector] Error: ${err}`));
 
+  const claudeCollector = new ClaudeCollector();
+  claudeCollector.on('session-update', (session) => syncManager.syncSession(session));
+  claudeCollector.on('error', (err) => fastify.log.error(`[ClaudeCollector] Error: ${err}`));
+
   let codexCollector: CodexCollector | undefined;
   if (config.codexDir) {
     codexCollector = new CodexCollector(config.codexDir);
@@ -95,10 +100,12 @@ export async function buildApp(config: AppConfig) {
     syncManager,
     geminiCollector,
     copilotCollector,
+    claudeCollector,
     codexCollector,
     start: () => {
       geminiCollector.start();
       copilotCollector.start();
+      claudeCollector.start();
       if (codexCollector) {
         codexCollector.start();
       }
@@ -106,6 +113,7 @@ export async function buildApp(config: AppConfig) {
     stop: async () => {
       await geminiCollector.stop();
       await copilotCollector.stop();
+      await claudeCollector.stop();
       if (codexCollector) {
         await codexCollector.stop();
       }

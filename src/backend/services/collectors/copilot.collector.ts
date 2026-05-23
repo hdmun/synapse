@@ -32,19 +32,27 @@ export class CopilotCollector extends BaseCollector {
     // Initial sync
     await this.poll();
 
-    this.watcher = chokidar.watch(this.dbPath, {
-      persistent: true,
-      ignoreInitial: true,
-    });
+    return new Promise((resolve, reject) => {
+      this.watcher = chokidar.watch(this.dbPath, {
+        persistent: true,
+        ignoreInitial: true,
+      });
 
-    this.watcher.on('all', (event) => {
-      if (event === 'add' || event === 'change') {
-        this.debouncePoll();
-      }
-    });
+      this.watcher.on('all', (event) => {
+        if (event === 'add' || event === 'change') {
+          this.debouncePoll();
+        }
+      });
 
-    this.watcher.on('error', (error) => {
-      this.emitError(error);
+      this.watcher.on('error', (error) => {
+        this.emitError(error);
+        reject(error);
+      });
+
+      this.watcher.on('ready', () => {
+        console.log(`[CopilotCollector] Watcher ready.`);
+        resolve();
+      });
     });
   }
 
