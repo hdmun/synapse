@@ -41,12 +41,14 @@ describe('App Component', () => {
     addMessage: vi.fn(),
     updateProject: vi.fn(),
     updateSession: vi.fn(),
+    fetchTokenStats: vi.fn(),
+    fetchActivityStats: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     // useStore(selector) 형태에 대응하기 위해 모킹 수정
-    (useStore as any).mockImplementation((selector: any) => selector(mockState));
+    (useStore as any).mockImplementation((selector: any) => selector ? selector(mockState) : mockState);
   });
 
   it('renders "Synapse Monitor" title', () => {
@@ -54,8 +56,8 @@ describe('App Component', () => {
     expect(screen.getByText('Synapse Monitor')).toBeInTheDocument();
   });
 
-  it('renders "Welcome to Synapse" when no session is selected', async () => {
+  it('renders "Synapse Dashboard" when on home route', async () => {
     render(<App />);
-    expect(await screen.findByText('Welcome to Synapse')).toBeInTheDocument();
+    expect(await screen.findByText('Synapse Dashboard')).toBeInTheDocument();
   });
 });

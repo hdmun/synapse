@@ -26,3 +26,39 @@ vi.mock('@tanstack/react-virtual', () => ({
 vi.mock('zustand/react/shallow', () => ({
   useShallow: (fn: any) => fn,
 }));
+
+// Mock CSS.supports
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'CSS', {
+    value: {
+      supports: () => true,
+    },
+    writable: true,
+  });
+}
+
+if (typeof global !== 'undefined') {
+  Object.defineProperty(global, 'CSS', {
+    value: {
+      supports: () => true,
+    },
+    writable: true,
+  });
+}
+
+// Mock matchMedia
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}

@@ -8,7 +8,15 @@ describe('SessionList', () => {
   beforeEach(() => {
     useStore.setState({
       sessionsById: {
-        's1-very-long-id': { id: 's1-very-long-id', projectId: 'p1', status: 'active', model: 'gemini-1.5', createdAt: new Date() }
+        's1-very-long-id': { 
+          id: 's1-very-long-id', 
+          projectId: 'p1', 
+          status: 'active', 
+          model: 'gemini-1.5', 
+          createdAt: new Date(),
+          source: 'gemini',
+          messageCount: 1
+        }
       },
       sessionIds: ['s1-very-long-id'],
       currentProject: { id: 'p1', name: 'Test Project', path: '/test', progress: 0 },

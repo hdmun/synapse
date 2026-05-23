@@ -8,7 +8,7 @@ describe('ProjectList', () => {
   beforeEach(() => {
     useStore.setState({
       projectsById: {
-        'p1': { id: 'p1', name: 'Test Project', path: '/test', progress: 50 }
+        'p1': { id: 'p1', name: 'Test Project', path: '/test', progress: 50, agents: ['gemini'] }
       },
       projectIds: ['p1'],
       currentProject: null,

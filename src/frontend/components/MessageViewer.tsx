@@ -419,28 +419,3 @@ export const MessageViewer = memo(() => {
 });
 
 MessageViewer.displayName = 'MessageViewer';
-           <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Created At</span>
-                        <span className="text-sm text-slate-300">{new Date(currentSession.createdAt).toLocaleString()}</span>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Message Count</span>
-                        <span className="text-sm text-slate-300">{messageIds.length} messages</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-          </div>
-      </div>
-
-      <main 
-        ref={parentRef}
-        className="flex-1 overflow-y-auto p-8 relative custom-scrollbar"
-      >
-        {renderMainContent()}
-      </main>
-    </div>
-  );
-});
-
-MessageViewer.displayName = 'MessageViewer';

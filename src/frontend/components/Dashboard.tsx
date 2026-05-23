@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import ActivityCalendar from 'react-activity-calendar';
+import { ActivityCalendar } from 'react-activity-calendar';
 
 export function Dashboard() {
   const { 
