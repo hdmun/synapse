@@ -8,7 +8,7 @@ describe('ProjectList', () => {
   beforeEach(() => {
     useStore.setState({
       projectsById: {
-        'p1': { id: 'p1', name: 'Test Project', path: '/test', progress: 50, agents: ['gemini'] }
+        'p1': { id: 'p1', name: 'Test Project', path: '/test', progress: 50, agents: ['gemini'], lastUpdated: new Date().toISOString() }
       },
       projectIds: ['p1'],
       currentProject: null,
@@ -25,7 +25,7 @@ describe('ProjectList', () => {
     render(<ProjectList />);
     expect(screen.getByText('Active Projects')).toBeInTheDocument();
     expect(screen.getByText('Test Project')).toBeInTheDocument();
-    expect(screen.getByText(/Syncing\.\.\. 50%/)).toBeInTheDocument();
+    expect(screen.getByText(/마지막 활동: 방금 전/)).toBeInTheDocument();
   });
 
   it('handles project selection', () => {

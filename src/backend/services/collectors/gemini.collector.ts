@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { BaseCollector } from './base.collector';
 import type { UnifiedSession, UnifiedMessage } from './types';
-import { extractMessageSummary } from '../../utils/message-utils';
+import { extractMessageSummary, cleanMessageContent } from '../../utils/message-utils';
 
 export class GeminiCollector extends BaseCollector {
   private watcher: FSWatcher | null = null;
@@ -94,12 +94,12 @@ export class GeminiCollector extends BaseCollector {
         const lines = content.split('\n').filter(line => line.trim().length > 0);
         if (lines.length === 0) return;
         
-        parsedData = JSON.parse(lines[0]);
+        parsedData = JSON.parse(lines[0]!);
         parsedData.messages = [];
         
         for (let i = 1; i < lines.length; i++) {
           try {
-            const lineData = JSON.parse(lines[i]);
+            const lineData = JSON.parse(lines[i]!);
             if (lineData.$set?.lastUpdated) {
               parsedData.lastUpdated = lineData.$set.lastUpdated;
             } else if (lineData.id) {
@@ -121,7 +121,7 @@ export class GeminiCollector extends BaseCollector {
         .map((m: any) => ({
           id: m.id,
           type: m.type as 'user' | 'agent' | 'info' | 'error',
-          content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+          content: cleanMessageContent(m.content),
           timestamp: new Date(m.timestamp),
           inputTokens: m.tokens?.input,
           outputTokens: m.tokens?.output,

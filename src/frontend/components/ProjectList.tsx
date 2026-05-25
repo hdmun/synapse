@@ -4,6 +4,7 @@ import { FolderOpen } from 'lucide-react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ProjectSkeleton, EmptyState, ErrorState } from './StatusStates';
 import { AGENTS, getAgentConfig } from '../constants/agents';
+import { formatTimeAgoKorean } from '../lib/utils';
 
 const ProjectListItem = memo(({ 
   id, 
@@ -68,17 +69,13 @@ const ProjectListItem = memo(({
           </div>
         </div>
         <div className="text-[10px] text-slate-500 font-mono mb-3 truncate" title={p.path}>{p.path}</div>     
-        <div className="flex items-center justify-between text-[10px] font-bold mb-1.5">       
-          <span className={isActive ? 'text-indigo-400' : 'text-slate-400'}>
-            {p.progress === 100 ? 'Completed' : 'Syncing...'} {p.progress}%
-          </span>
-        </div>
-        <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-          <div
-            className={`h-full transition-all duration-500 ${isActive ? 'bg-indigo-500' : 'bg-slate-600'}`}
-            style={{ width: `${p.progress}%` }}
-          ></div>
-        </div>
+        {p.lastUpdated ? (
+          <div className="flex items-center justify-end text-[10px] font-bold mb-1.5">       
+            <span className={isActive ? 'text-indigo-400' : 'text-slate-400'}>
+              마지막 활동: {formatTimeAgoKorean(p.lastUpdated)}
+            </span>
+          </div>
+        ) : null}
       </button>
     </div>
   );

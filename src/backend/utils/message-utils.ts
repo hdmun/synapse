@@ -53,3 +53,28 @@ export function extractMessageSummary(content: any, maxLength: number = 80): str
   
   return summary;
 }
+
+export function cleanMessageContent(content: any): string {
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  const isEmptyTextObject = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return false;
+    const keys = Object.keys(obj);
+    return keys.length === 1 && keys[0] === 'text' && obj.text === '';
+  };
+
+  if (Array.isArray(content)) {
+    const filtered = content.filter(item => !isEmptyTextObject(item));
+    if (filtered.length === 0) return '';
+    if (filtered.length === 1 && typeof filtered[0] === 'string') return filtered[0];
+    return JSON.stringify(filtered);
+  }
+
+  if (isEmptyTextObject(content)) {
+    return '';
+  }
+
+  return JSON.stringify(content);
+}
