@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Chokidar 파일 감시, 데이터 동기화(Syncer) 및 백그라운드 서비스 동작 규칙
+---
+
 # Backend Services & Background Processes
 
 ## File Watching (Chokidar)

@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Vitest 및 React Testing Library를 사용한 프론트엔드 UI 및 상태 목 테스트 규칙
+---
+
 # Frontend Testing Strategy
 
 ## Core Principles

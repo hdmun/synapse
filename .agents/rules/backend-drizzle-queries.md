@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 백엔드 Drizzle ORM의 Query Builder API 및 SQL 쿼리 작성 규칙
+---
+
 # Backend Drizzle Queries
 
 ## Querying

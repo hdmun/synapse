@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Fastify 라우팅, 컨트롤러 구조 및 Zod 유효성 검사 규칙
+---
+
 # Backend Fastify Routing & Validation
 
 ## Routing & Controllers

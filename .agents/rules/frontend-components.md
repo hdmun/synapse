@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 프론트엔드 React 함수형 컴포넌트, 커스텀 훅 및 useEffect 정리 규칙
+---
+
 # Frontend React Components
 
 ## Component Paradigms

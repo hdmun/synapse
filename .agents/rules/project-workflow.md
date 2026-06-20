@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Conventional Commits 커밋 규격, 환경 변수 보안 및 빌드 검증 프로세스 규칙
+---
+
 # Project Workflow & Security
 
 ## Git & Commits

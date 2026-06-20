@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 모노레포 폴더 구조, 경계 규칙 및 패키지 관리 규칙
+---
+
 # Architecture & Monorepo Boundaries
 
 ## Project Structure

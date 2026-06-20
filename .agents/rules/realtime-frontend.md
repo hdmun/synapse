@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Socket.io 클라이언트의 라이프사이클 관리, 연결 피드백 및 리스너 해제 규칙
+---
+
 # Real-time Frontend Implementation
 
 ## Frontend Implementation

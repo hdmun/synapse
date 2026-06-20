@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Fastify 플러그인 생태계와 전역 에러 핸들링 규칙
+---
+
 # Backend Fastify Plugins & Errors
 
 ## Plugin Ecosystem

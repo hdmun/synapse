@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 엄격한 타입 옵션, Zod 스키마 기반 타입 추론, null 및 옵셔널 타입 정의 규칙
+---
+
 # TypeScript & Type Safety
 
 ## Strict Mode

@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Bun Test 및 Fastify app.inject를 활용한 백엔드 라우트 및 데이터베이스 테스트 규칙
+---
+
 # Backend Testing Strategy
 
 ## Core Principles

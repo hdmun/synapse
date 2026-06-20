@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Drizzle ORM 데이터베이스 스키마 정의 및 마이그레이션 규칙
+---
+
 # Backend Drizzle Schema & Migrations
 
 ## Schema Definition

@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 가상 리스트, 메모이제이션, 콜백 함수를 활용한 프론트엔드 성능 최적화 규칙
+---
+
 # Frontend React Performance
 
 ## Performance & Optimization

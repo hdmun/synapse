@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Zustand를 사용한 도메인별 상태 관리 및 아토믹 셀렉터 활용 규칙
+---
+
 # Frontend State Management (Zustand)
 
 ## Modular Stores

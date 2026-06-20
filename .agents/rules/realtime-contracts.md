@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: 프론트엔드와 백엔드 간 Socket.io 이벤트 및 데이터 페이로드 타입 정의 규칙
+---
+
 # Real-time Event Contracts
 
 ## Event Contracts

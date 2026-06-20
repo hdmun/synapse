@@ -1,3 +1,8 @@
+---
+trigger: model_decision
+description: Lucide React 아이콘 및 Recharts 데이터 시각화 스타일링 규칙
+---
+
 # Frontend UI & Styling
 
 ## UI & Visuals
