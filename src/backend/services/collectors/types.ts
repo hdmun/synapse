@@ -1,13 +1,16 @@
+import { TokenTaxonomy, FeatureAdoptionTaxonomy, Enrichers, ToolCall } from '../../../shared/schema';
+
 export interface UnifiedMessage {
   id: string;
   type: 'user' | 'agent' | 'info' | 'error';
   content: string;
   timestamp: Date;
-  inputTokens?: number;
-  outputTokens?: number;
-  thoughtTokens?: number;
-  thoughts?: any[];
-  toolCalls?: any[];
+  // Tier 1: Core Taxonomy
+  tokens?: TokenTaxonomy;
+  features?: FeatureAdoptionTaxonomy[];
+  toolCalls?: ToolCall[];
+  // Tier 2: Source Enrichers
+  enrichers?: Enrichers;
 }
 
 export interface UnifiedSession {
@@ -19,6 +22,9 @@ export interface UnifiedSession {
   startTime: Date;
   lastUpdated: Date;
   messages: UnifiedMessage[];
+  // New Core Analytics Fields
+  totalTokens?: TokenTaxonomy;
+  estimatedCost?: number;
 }
 
 export interface CollectorEvents {

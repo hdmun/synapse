@@ -25,16 +25,17 @@ export async function getProjects() {
 export async function getTokenStats() {
   const stats = await db.select({
     projectName: projects.name,
-    totalTokens: sql<number>`SUM(${sessions.totalTokens})`
+    totalBaseTokens: sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER))`,
+    totalReasoningTokens: sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.reasoning') AS INTEGER))`
   })
   .from(projects)
   .leftJoin(sessions, eq(sessions.projectId, projects.id))
   .groupBy(projects.id, projects.name)
-  .orderBy(desc(sql<number>`SUM(${sessions.totalTokens})`));
+  .orderBy(desc(sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER))`));
 
   return stats.map(s => ({
     name: s.projectName,
-    tokens: s.totalTokens || 0
+    tokens: (s.totalBaseTokens || 0) + (s.totalReasoningTokens || 0)
   }));
 }
 
@@ -76,6 +77,7 @@ export async function getProjectSessions(projectId: string) {
     model: sessions.model,
     summary: sessions.summary,
     totalTokens: sessions.totalTokens,
+    estimatedCost: sessions.estimatedCost,
     messageCount: sql<number>`COUNT(${messages.id})`
   })
   .from(sessions)
@@ -88,8 +90,12 @@ export async function getProjectSessions(projectId: string) {
   const result = await Promise.all(sessionList.map(async (s) => {
     const hasValidSummary = s.summary && !s.summary.trim().startsWith('{') && !s.summary.trim().startsWith('[');
     
+    // Parse JSON totalTokens
+    const totalTokens = s.totalTokens ? JSON.parse(s.totalTokens) : undefined;
+    const sessionWithParsed = { ...s, totalTokens };
+
     if (hasValidSummary || s.messageCount === 0) {
-      return s;
+      return sessionWithParsed;
     }
 
     // Attempt to backfill summary from the first message
@@ -102,11 +108,11 @@ export async function getProjectSessions(projectId: string) {
       const summary = extractMessageSummary(firstMsg.content);
       if (summary) {
         await db.update(sessions).set({ summary }).where(eq(sessions.id, s.id));
-        return { ...s, summary };
+        return { ...sessionWithParsed, summary };
       }
     }
     
-    return s;
+    return sessionWithParsed;
   }));
 
   return result;

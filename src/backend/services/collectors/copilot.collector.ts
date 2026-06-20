@@ -118,14 +118,26 @@ export class CopilotCollector extends BaseCollector {
             });
           }
           if (turn.assistant_response) {
+            const inputTokens = turn.user_message ? Math.ceil(turn.user_message.length / 4) : 0;
+            const outputTokens = Math.ceil(turn.assistant_response.length / 4);
+
             messages.push({
               id: `${turn.id}-agent`,
               type: 'agent',
               content: turn.assistant_response,
               timestamp: new Date(turn.timestamp),
-              inputTokens: turn.user_message ? Math.ceil(turn.user_message.length / 4) : 0,
-              outputTokens: Math.ceil(turn.assistant_response.length / 4),
+              tokens: {
+                base: inputTokens + outputTokens
+              }
             });
+          }
+        }
+
+        // Aggregate total tokens for the session
+        let totalBase = 0;
+        for (const m of messages) {
+          if (m.tokens) {
+            totalBase += m.tokens.base || 0;
           }
         }
 
@@ -138,6 +150,9 @@ export class CopilotCollector extends BaseCollector {
           startTime: new Date(sessionRow.created_at),
           lastUpdated: new Date(sessionRow.updated_at),
           messages,
+          totalTokens: {
+            base: totalBase
+          }
         };
 
         this.emitSessionUpdate(unifiedSession);

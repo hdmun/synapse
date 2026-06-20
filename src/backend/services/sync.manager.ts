@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { projects, sessions, messages, thoughts, toolCalls } from '../db/schema';
+import { projects, sessions, messages } from '../db/schema';
 import type { UnifiedSession } from './collectors/types';
 import path from 'path';
 import crypto from 'crypto';
@@ -48,12 +48,16 @@ export class SyncManager {
           lastUpdated: sessionData.lastUpdated,
           model: sessionData.model || 'unknown',
           summary: sessionData.summary,
+          totalTokens: sessionData.totalTokens ? JSON.stringify(sessionData.totalTokens) : null,
+          estimatedCost: sessionData.estimatedCost || 0,
         }).onConflictDoUpdate({
           target: sessions.id,
           set: {
             lastUpdated: sessionData.lastUpdated,
             summary: sessionData.summary,
-            source: sessionData.source, // Update source in case it's missing or changed
+            source: sessionData.source,
+            totalTokens: sessionData.totalTokens ? JSON.stringify(sessionData.totalTokens) : null,
+            estimatedCost: sessionData.estimatedCost || 0,
           }
         });
 
@@ -61,7 +65,6 @@ export class SyncManager {
         for (const msg of sessionData.messages) {
           // Normalize type to match schema enum
           let msgType = msg.type;
-          // Standardize all AI replies as 'agent' type
           if (msg.type === 'agent' || msg.type === 'gemini') {
             msgType = 'agent';
           }
@@ -72,46 +75,20 @@ export class SyncManager {
             type: msgType as any,
             content: msg.content,
             timestamp: msg.timestamp,
-            inputTokens: msg.inputTokens,
-            outputTokens: msg.outputTokens,
-            thoughtTokens: msg.thoughtTokens,
+            tokens: msg.tokens ? JSON.stringify(msg.tokens) : null,
+            features: msg.features ? JSON.stringify(msg.features) : JSON.stringify([]),
+            toolCalls: msg.toolCalls ? JSON.stringify(msg.toolCalls) : JSON.stringify([]),
+            enrichers: msg.enrichers ? JSON.stringify(msg.enrichers) : null,
           }).onConflictDoUpdate({
             target: messages.id,
             set: {
               content: msg.content,
+              tokens: msg.tokens ? JSON.stringify(msg.tokens) : null,
+              features: msg.features ? JSON.stringify(msg.features) : JSON.stringify([]),
+              toolCalls: msg.toolCalls ? JSON.stringify(msg.toolCalls) : JSON.stringify([]),
+              enrichers: msg.enrichers ? JSON.stringify(msg.enrichers) : null,
             }
           });
-
-          if (msg.thoughts && Array.isArray(msg.thoughts)) {
-            for (const thought of msg.thoughts) {
-              await tx.insert(thoughts).values({
-                messageId: msg.id,
-                subject: thought.subject,
-                description: thought.description,
-                timestamp: new Date(thought.timestamp),
-              }).onConflictDoNothing();
-            }
-          }
-
-          if (msg.toolCalls && Array.isArray(msg.toolCalls)) {
-            for (const tc of msg.toolCalls) {
-              await tx.insert(toolCalls).values({
-                id: tc.id,
-                messageId: msg.id,
-                name: tc.name,
-                args: typeof tc.args === 'string' ? tc.args : JSON.stringify(tc.args),
-                result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result), 
-                status: tc.status,
-                timestamp: new Date(tc.timestamp),
-              }).onConflictDoUpdate({
-                target: toolCalls.id,
-                set: {
-                  result: typeof tc.result === 'string' ? tc.result : JSON.stringify(tc.result),
-                  status: tc.status
-                }
-              });
-            }
-          }
         }
       });
 

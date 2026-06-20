@@ -183,15 +183,31 @@ const MessageListItem = memo(({
           }
 
           return (
-            <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm ${
+            <div key={idx} className={`px-5 py-3.5 rounded-2xl max-w-[85%] leading-relaxed text-sm relative ${
               isUser 
               ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/10' 
               : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
             }`}>
               {content}
               
+              {/* Token Usage Badge */}
+              {idx === parsedParts.length - 1 && !isUser && m.tokens && (
+                <div className="absolute -bottom-6 left-0 flex gap-2">
+                  <div className="bg-slate-900 border border-slate-700 rounded-full px-2 py-0.5 text-[9px] font-bold text-slate-400 flex items-center gap-1">
+                    <Zap size={10} className="text-amber-500" />
+                    <span>{m.tokens.base + (m.tokens.reasoning || 0)} TOKENS</span>
+                  </div>
+                  {m.tokens.reasoning && (
+                    <div className="bg-slate-900 border border-slate-700 rounded-full px-2 py-0.5 text-[9px] font-bold text-indigo-400 flex items-center gap-1">
+                      <Cpu size={10} />
+                      <span>{m.tokens.reasoning} REASONING</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
-              {idx === parsedParts.length - 1 && !isUser && m.thoughts && m.thoughts.length > 0 && (
+              {idx === parsedParts.length - 1 && !isUser && m.enrichers?.gemini?.thoughtTrace && m.enrichers.gemini.thoughtTrace.length > 0 && (
                 <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
                     <button 
                       onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
@@ -206,7 +222,7 @@ const MessageListItem = memo(({
                     </button>
                     {isThoughtExpanded && (
                       <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
-                          {m.thoughts.map((t, idx) => (
+                          {m.enrichers.gemini.thoughtTrace.map((t, idx) => (
                             <div key={idx} className="flex gap-2 text-left">
                               <span className="text-indigo-500 shrink-0">&gt;</span>
                               <span>{t.subject}: {t.description}</span>
@@ -394,8 +410,23 @@ export const MessageViewer = memo(() => {
                         <span className="text-sm text-slate-300">{currentSession.model}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Created At</span>
-                        <span className="text-sm text-slate-300">{new Date(currentSession.createdAt).toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Started At</span>
+                        <span className="text-sm text-slate-300">{new Date(currentSession.startTime).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Total Tokens</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-slate-300 font-bold">
+                            {(currentSession.totalTokens?.base || 0) + (currentSession.totalTokens?.reasoning || 0)}
+                          </span>
+                          <span className="text-[9px] text-slate-500">
+                            (B: {currentSession.totalTokens?.base || 0}, R: {currentSession.totalTokens?.reasoning || 0})
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Estimated Cost</span>
+                        <span className="text-sm text-emerald-500 font-bold">${currentSession.estimatedCost?.toFixed(4) || '0.0000'}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Message Count</span>

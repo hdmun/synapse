@@ -118,17 +118,43 @@ export class GeminiCollector extends BaseCollector {
       
       const messages: UnifiedMessage[] = parsedData.messages
         .filter((m: any) => m.type !== 'info')
-        .map((m: any) => ({
-          id: m.id,
-          type: m.type as 'user' | 'agent' | 'info' | 'error',
-          content: cleanMessageContent(m.content),
-          timestamp: new Date(m.timestamp),
-          inputTokens: m.tokens?.input,
-          outputTokens: m.tokens?.output,
-          thoughtTokens: m.tokens?.thoughts,
-          thoughts: m.thoughts,
-          toolCalls: m.toolCalls,
-        }));
+        .map((m: any) => {
+          const msg: UnifiedMessage = {
+            id: m.id,
+            type: m.type as 'user' | 'agent' | 'info' | 'error',
+            content: cleanMessageContent(m.content),
+            timestamp: new Date(m.timestamp),
+            tokens: m.tokens ? {
+              base: (m.tokens.input || 0) + (m.tokens.output || 0),
+              reasoning: m.tokens.thoughts || 0
+            } : undefined,
+            toolCalls: m.toolCalls,
+          };
+
+          if (m.thoughts && m.thoughts.length > 0) {
+            msg.enrichers = {
+              gemini: {
+                thoughtTrace: m.thoughts.map((t: any) => ({
+                  subject: t.subject,
+                  description: t.description,
+                  timestamp: new Date(t.timestamp).toISOString()
+                }))
+              }
+            };
+          }
+
+          return msg;
+        });
+
+      // Aggregate total tokens for the session
+      let totalBase = 0;
+      let totalReasoning = 0;
+      for (const m of messages) {
+        if (m.tokens) {
+          totalBase += m.tokens.base || 0;
+          totalReasoning += m.tokens.reasoning || 0;
+        }
+      }
 
       const firstMsg = parsedData.messages.find((m: any) => m.type !== 'info');
       const summary = firstMsg ? extractMessageSummary(firstMsg.content) : undefined;
@@ -142,6 +168,10 @@ export class GeminiCollector extends BaseCollector {
         startTime: new Date(parsedData.startTime),
         lastUpdated: new Date(parsedData.lastUpdated),
         messages,
+        totalTokens: {
+          base: totalBase,
+          reasoning: totalReasoning
+        }
       };
 
       this.emitSessionUpdate(unifiedSession);
