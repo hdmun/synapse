@@ -16,28 +16,28 @@ To maintain the integrity and consistency of the codebase, AI agents MUST adhere
 ---
 
 ## Architecture & Foundational Rules
-- **[Architecture & Boundaries](.gemini/rules/architecture.md):** Monorepo structure, folder isolation, and import rules.
-- **[TypeScript Standards](.gemini/rules/typescript.md):** Strict mode, banning `any`, and Zod integration.
-- **[Project Workflow & Security](.gemini/rules/project-workflow.md):** Git commits, environment variables, and build analysis.
+- **[Architecture & Boundaries](.agents/rules/architecture.md):** Monorepo structure, folder isolation, and import rules.
+- **[TypeScript Standards](.agents/rules/typescript.md):** Strict mode, banning `any`, and Zod integration.
+- **[Project Workflow & Security](.agents/rules/project-workflow.md):** Git commits, environment variables, and build analysis.
 
 ## Backend Rules
-- **[Fastify Routing & Validation](.gemini/rules/backend-fastify-routing.md):** Fastify routing and Zod validation schemas.
-- **[Fastify Plugins & Errors](.gemini/rules/backend-fastify-plugins.md):** Fastify plugins and global error handling.
-- **[Drizzle Schema & Migrations](.gemini/rules/backend-drizzle-schema.md):** Drizzle ORM schemas, relations, and migrations.
-- **[Drizzle Queries](.gemini/rules/backend-drizzle-queries.md):** Drizzle Query Builder API and conventions.
-- **[Backend Services](.gemini/rules/backend-services.md):** Background services, file watching (Chokidar), and sync logic.
+- **[Fastify Routing & Validation](.agents/rules/backend-fastify-routing.md):** Fastify routing and Zod validation schemas.
+- **[Fastify Plugins & Errors](.agents/rules/backend-fastify-plugins.md):** Fastify plugins and global error handling.
+- **[Drizzle Schema & Migrations](.agents/rules/backend-drizzle-schema.md):** Drizzle ORM schemas, relations, and migrations.
+- **[Drizzle Queries](.agents/rules/backend-drizzle-queries.md):** Drizzle Query Builder API and conventions.
+- **[Backend Services](.agents/rules/backend-services.md):** Background services, file watching (Chokidar), and sync logic.
 
 ## Frontend Rules
-- **[React Components](.gemini/rules/frontend-components.md):** Functional components, hooks, and side effects.
-- **[React Performance](.gemini/rules/frontend-performance.md):** Virtualization, memoization, and callback optimization.
-- **[UI & Styling](.gemini/rules/frontend-styling.md):** UI icons (Lucide) and data visualization (Recharts).
-- **[Frontend State](.gemini/rules/frontend-state.md):** Zustand modular stores, atomic selectors, and action definitions.
+- **[React Components](.agents/rules/frontend-components.md):** Functional components, hooks, and side effects.
+- **[React Performance](.agents/rules/frontend-performance.md):** Virtualization, memoization, and callback optimization.
+- **[UI & Styling](.agents/rules/frontend-styling.md):** UI icons (Lucide) and data visualization (Recharts).
+- **[Frontend State](.agents/rules/frontend-state.md):** Zustand modular stores, atomic selectors, and action definitions.
 
 ## Real-time Communication (Socket.io)
-- **[Real-time Contracts](.gemini/rules/realtime-contracts.md):** Shared event definitions and TypeScript typing.
-- **[Real-time Backend](.gemini/rules/realtime-backend.md):** Backend namespace/room handling and broadcast logic.
-- **[Real-time Frontend](.gemini/rules/realtime-frontend.md):** Frontend connection lifecycle and event listeners.
+- **[Real-time Contracts](.agents/rules/realtime-contracts.md):** Shared event definitions and TypeScript typing.
+- **[Real-time Backend](.agents/rules/realtime-backend.md):** Backend namespace/room handling and broadcast logic.
+- **[Real-time Frontend](.agents/rules/realtime-frontend.md):** Frontend connection lifecycle and event listeners.
 
 ## Testing Strategy
-- **[Frontend Testing](.gemini/rules/testing-frontend.md):** Vitest, React Testing Library, and UI mocking.
-- **[Backend Testing](.gemini/rules/testing-backend.md):** Bun test, Fastify inject, and database test environments.
+- **[Frontend Testing](.agents/rules/testing-frontend.md):** Vitest, React Testing Library, and UI mocking.
+- **[Backend Testing](.agents/rules/testing-backend.md):** Bun test, Fastify inject, and database test environments.
