@@ -1,0 +1,28 @@
+{
+  "name": "@synapse/backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "NODE_ENV=test bun test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@synapse/shared": "workspace:*",
+    "@fastify/cors": "^11.2.0",
+    "drizzle-orm": "^0.45.2",
+    "fastify": "^5.8.5",
+    "fastify-plugin": "^5.1.0",
+    "fastify-socket.io": "^5.1.0",
+    "fastify-type-provider-zod": "^6.1.0",
+    "chokidar": "^5.0.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^12.11.1",
+    "drizzle-kit": "^0.31.10"
+  }
+}

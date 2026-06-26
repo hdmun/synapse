@@ -1,0 +1,45 @@
+{
+  "name": "@synapse/frontend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@synapse/shared": "workspace:*",
+    "@tanstack/react-virtual": "^3.13.24",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "date-fns": "^4.3.0",
+    "lucide-react": "^1.8.0",
+    "react": "^19.2.5",
+    "react-activity-calendar": "^3.2.0",
+    "react-dom": "^19.2.5",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.14.2",
+    "react-syntax-highlighter": "^16.1.1",
+    "recharts": "^3.8.1",
+    "remark-gfm": "^4.0.1",
+    "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^3.5.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@types/recharts": "^2.0.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^4.1.5",
+    "jsdom": "^29.0.2",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "vite": "^6.0.7",
+    "vitest": "^4.1.5"
+  }
+}

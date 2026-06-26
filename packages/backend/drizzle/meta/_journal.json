@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1777284824053,
+      "tag": "0000_broken_strong_guy",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1777284824054,
+      "tag": "0001_add_file_sync_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1777950113318,
+      "tag": "0002_clean_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1781737357608,
+      "tag": "0003_worthless_toad_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782458162211,
+      "tag": "0004_dazzling_patch",
+      "breakpoints": true
+    }
+  ]
+}
