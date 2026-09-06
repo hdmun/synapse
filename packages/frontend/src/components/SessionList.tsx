@@ -3,7 +3,8 @@ import { useStore } from '../store/useStore';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SessionSkeleton, EmptyState, ErrorState } from './StatusStates';
 import { getAgentConfig } from '../constants/agents';
-import { Filter, Eye, EyeOff } from 'lucide-react';
+import { Filter, Eye, EyeOff, Zap } from 'lucide-react';
+import { formatTimeAgoKorean } from '../lib/utils';
 
 const SessionListItem = memo(({ 
   id, 
@@ -25,7 +26,7 @@ const SessionListItem = memo(({
   const isActive = currentSession?.id === s.id;
 
   const formattedDate = s.lastUpdated 
-    ? new Date(s.lastUpdated).toLocaleString() 
+    ? formatTimeAgoKorean(s.lastUpdated) 
     : 'Unknown';
 
   const agentConfig = getAgentConfig(s.source || 'unknown');
