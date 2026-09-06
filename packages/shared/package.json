@@ -8,6 +8,9 @@
       "types": "./src/index.ts"
     }
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "dependencies": {
     "zod": "^4.3.6"
   }
