@@ -25,18 +25,56 @@ export async function getProjects() {
 export async function getTokenStats() {
   const stats = await db.select({
     projectName: projects.name,
-    totalBaseTokens: sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER))`,
-    totalReasoningTokens: sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.reasoning') AS INTEGER))`
+    totalBaseTokens: sql<number>`COALESCE(SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER)), 0)`,
+    totalReasoningTokens: sql<number>`COALESCE(SUM(CAST(json_extract(${sessions.totalTokens}, '$.reasoning') AS INTEGER)), 0)`,
+    totalCost: sql<number>`COALESCE(SUM(CASE WHEN ${sessions.estimatedCost} IS NOT NULL THEN ${sessions.estimatedCost} ELSE 0 END), 0)`
   })
   .from(projects)
   .leftJoin(sessions, eq(sessions.projectId, projects.id))
   .groupBy(projects.id, projects.name)
-  .orderBy(desc(sql<number>`SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER))`));
+  .orderBy(desc(sql<number>`COALESCE(SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER)), 0)`));
 
-  return stats.map(s => ({
-    name: s.projectName,
-    tokens: (s.totalBaseTokens || 0) + (s.totalReasoningTokens || 0)
-  }));
+  return stats.map(s => {
+    const baseTokens = Number(s.totalBaseTokens) || 0;
+    const reasoningTokens = Number(s.totalReasoningTokens) || 0;
+    return {
+      name: s.projectName,
+      tokens: baseTokens + reasoningTokens,
+      baseTokens,
+      reasoningTokens,
+      estimatedCost: Number(s.totalCost) || 0,
+    };
+  });
+}
+
+export async function getOverviewStats() {
+  const [tokenAgg] = await db.select({
+    totalBaseTokens: sql<number>`COALESCE(SUM(CAST(json_extract(${sessions.totalTokens}, '$.base') AS INTEGER)), 0)`,
+    totalReasoningTokens: sql<number>`COALESCE(SUM(CAST(json_extract(${sessions.totalTokens}, '$.reasoning') AS INTEGER)), 0)`,
+    totalEstimatedCost: sql<number>`COALESCE(SUM(CASE WHEN ${sessions.estimatedCost} IS NOT NULL THEN ${sessions.estimatedCost} ELSE 0 END), 0)`,
+    totalSessions: sql<number>`COUNT(${sessions.id})`
+  }).from(sessions);
+
+  const distinctAgents = await db.selectDistinct({
+    source: sessions.source
+  }).from(sessions);
+
+  const costSupportedRows = await db.selectDistinct({
+    source: sessions.source
+  }).from(sessions).where(sql`${sessions.estimatedCost} IS NOT NULL AND ${sessions.estimatedCost} > 0`);
+
+  const base = Number(tokenAgg?.totalBaseTokens) || 0;
+  const reasoning = Number(tokenAgg?.totalReasoningTokens) || 0;
+
+  return {
+    totalTokens: base + reasoning,
+    baseTokens: base,
+    reasoningTokens: reasoning,
+    totalEstimatedCost: Number(tokenAgg?.totalEstimatedCost) || 0,
+    totalSessions: Number(tokenAgg?.totalSessions) || 0,
+    activeAgents: distinctAgents.map(a => a.source).filter(Boolean),
+    costSupportedAgents: costSupportedRows.map(a => a.source).filter(Boolean),
+  };
 }
 
 export async function getActivityStats() {

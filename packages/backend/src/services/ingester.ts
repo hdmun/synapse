@@ -127,7 +127,7 @@ export class Ingester {
         model: sessionData.model || 'unknown',
         summary: sessionData.summary,
         totalTokens: sessionData.totalTokens ? JSON.stringify(sessionData.totalTokens) : null,
-        estimatedCost: sessionData.estimatedCost || 0,
+        estimatedCost: sessionData.estimatedCost !== undefined ? sessionData.estimatedCost : null,
       }).onConflictDoUpdate({
         target: sessions.id,
         set: {
@@ -135,7 +135,7 @@ export class Ingester {
           summary: sessionData.summary,
           source: sessionData.source,
           totalTokens: sessionData.totalTokens ? JSON.stringify(sessionData.totalTokens) : null,
-          estimatedCost: sessionData.estimatedCost || 0,
+          estimatedCost: sessionData.estimatedCost !== undefined ? sessionData.estimatedCost : null,
         }
       });
 

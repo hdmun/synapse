@@ -161,6 +161,10 @@ export class GeminiCollector extends BaseCollector {
       const firstMsg = parsedData.messages.find((m: any) => m.type !== 'info');
       const summary = firstMsg ? extractMessageSummary(firstMsg.content) : undefined;
 
+      const estimatedCost = (totalBase > 0 || totalReasoning > 0)
+        ? Number(((totalBase * 0.00000010) + (totalReasoning * 0.00000040)).toFixed(6))
+        : 0;
+
       const unifiedSession: UnifiedSession = {
         source: 'gemini',
         id: parsedData.sessionId,
@@ -173,7 +177,8 @@ export class GeminiCollector extends BaseCollector {
         totalTokens: {
           base: totalBase,
           reasoning: totalReasoning
-        }
+        },
+        estimatedCost
       };
 
       this.emitSessionUpdate({

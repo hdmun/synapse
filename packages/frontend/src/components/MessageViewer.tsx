@@ -245,19 +245,25 @@ export const MessageViewer = memo(() => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Model:</span>
-                    <span className="font-mono text-slate-300">{currentSession.model}</span>
+                    <span className="font-mono text-slate-300">{currentSession.model || 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Base Tokens:</span>
-                    <span className="font-mono text-slate-300">{currentSession.totalTokens?.base ?? 0}</span>
+                    <span className={`font-mono ${currentSession.totalTokens?.base != null ? 'text-slate-300' : 'text-slate-500 italic'}`}>
+                      {currentSession.totalTokens?.base != null ? currentSession.totalTokens.base.toLocaleString() : 'Unavailable'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Reasoning Tokens:</span>
-                    <span className="font-mono text-indigo-400 font-bold">{currentSession.totalTokens?.reasoning ?? 0}</span>
+                    <span className={`font-mono ${currentSession.totalTokens?.reasoning != null ? 'text-purple-400 font-bold' : 'text-slate-500 italic'}`}>
+                      {currentSession.totalTokens?.reasoning != null ? currentSession.totalTokens.reasoning.toLocaleString() : 'Unavailable'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Estimated Cost:</span>
-                    <span className="font-mono text-emerald-400 font-bold">${currentSession.estimatedCost?.toFixed(4) || '0.0000'}</span>
+                    <span className={`font-mono ${currentSession.estimatedCost != null && currentSession.estimatedCost > 0 ? 'text-emerald-400 font-bold' : 'text-slate-500 italic'}`}>
+                      {currentSession.estimatedCost != null && currentSession.estimatedCost > 0 ? `$${currentSession.estimatedCost.toFixed(4)}` : 'Unavailable'}
+                    </span>
                   </div>
                 </div>
               </div>

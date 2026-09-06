@@ -34,6 +34,7 @@ describe('App Component', () => {
     updateProject: vi.fn(),
     updateSession: vi.fn(),
     fetchTokenStats: vi.fn(),
+    fetchOverviewStats: vi.fn(),
     fetchActivityStats: vi.fn(),
   };
 

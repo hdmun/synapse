@@ -74,11 +74,23 @@ const SessionListItem = memo(({
         )}
         <div className="flex justify-between items-center mt-2">
           <div className="text-[10px] text-slate-600">{formattedDate}</div>
-          {s.messageCount !== undefined && (
-            <div className="text-[9px] font-bold text-slate-500 bg-slate-800/50 px-1.5 py-0.5 rounded-md">
-              {s.messageCount} msgs
-            </div>
-          )}
+          <div className="flex items-center gap-1.5">
+            {s.totalTokens && ((s.totalTokens.base || 0) > 0 || ((s.totalTokens.reasoning || 0) > 0)) && (
+              <div className="text-[9px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-md">
+                {((s.totalTokens.base || 0) + (s.totalTokens.reasoning || 0)).toLocaleString()} tok
+              </div>
+            )}
+            {s.estimatedCost != null && s.estimatedCost > 0 && (
+              <div className="text-[9px] font-mono text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-md">
+                ${s.estimatedCost.toFixed(4)}
+              </div>
+            )}
+            {s.messageCount !== undefined && (
+              <div className="text-[9px] font-bold text-slate-500 bg-slate-800/50 px-1.5 py-0.5 rounded-md">
+                {s.messageCount} msgs
+              </div>
+            )}
+          </div>
         </div>
       </button>
     </div>

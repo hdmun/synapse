@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 import { z } from 'zod';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { getProjects, getProjectSessions, getTokenStats, getActivityStats } from '../controllers/project.controller';
+import { getProjects, getProjectSessions, getTokenStats, getActivityStats, getOverviewStats } from '../controllers/project.controller';
 import { getSessionDetails } from '../controllers/session.controller';
 import { searchMessages } from '../controllers/search.controller';
 
@@ -11,6 +11,10 @@ export default async function apiRoutes(fastify: FastifyInstance, options: Fasti
   fastify.setSerializerCompiler(serializerCompiler);
 
   const server = fastify.withTypeProvider<ZodTypeProvider>();
+
+  server.get('/api/stats/overview', async (request, reply) => {
+    return await getOverviewStats();
+  });
 
   server.get('/api/stats/tokens', async (request, reply) => {
     return await getTokenStats();

@@ -44,10 +44,29 @@ interface AppState {
   fetchSessions: (projectId: string) => Promise<void>;
   fetchMessages: (sessionId: string) => Promise<void>;
   
-  tokenStats: { name: string, tokens: number }[];
+  tokenStats: { 
+    name: string; 
+    tokens: number;
+    baseTokens?: number;
+    reasoningTokens?: number;
+    estimatedCost?: number;
+  }[];
   tokenStatsLoading: boolean;
   tokenStatsError: string | null;
   fetchTokenStats: () => Promise<void>;
+
+  overviewStats: {
+    totalTokens: number;
+    baseTokens: number;
+    reasoningTokens: number;
+    totalEstimatedCost: number;
+    totalSessions: number;
+    activeAgents: string[];
+    costSupportedAgents: string[];
+  } | null;
+  overviewStatsLoading: boolean;
+  overviewStatsError: string | null;
+  fetchOverviewStats: () => Promise<void>;
 
   activityStats: { date: string, count: number, level: number }[];
   activityStatsLoading: boolean;
@@ -81,6 +100,10 @@ export const useStore = create<AppState>((set, get) => ({
   tokenStats: [],
   tokenStatsLoading: false,
   tokenStatsError: null,
+
+  overviewStats: null,
+  overviewStatsLoading: false,
+  overviewStatsError: null,
 
   activityStats: [],
   activityStatsLoading: false,
@@ -226,6 +249,20 @@ export const useStore = create<AppState>((set, get) => ({
       set({ tokenStatsError: err.message });
     } finally {
       set({ tokenStatsLoading: false });
+    }
+  },
+
+  fetchOverviewStats: async () => {
+    set({ overviewStatsLoading: true, overviewStatsError: null });
+    try {
+      const res = await fetch('/api/stats/overview');
+      if (!res.ok) throw new Error('Failed to fetch overview stats');
+      const data = await res.json();
+      set({ overviewStats: data });
+    } catch (err: any) {
+      set({ overviewStatsError: err.message });
+    } finally {
+      set({ overviewStatsLoading: false });
     }
   },
 
