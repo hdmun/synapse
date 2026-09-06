@@ -39,4 +39,5 @@ data/
 # database files
 *.db
 *.db-*
+*.bak
 

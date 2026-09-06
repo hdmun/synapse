@@ -1,6 +1,5 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import socketio from 'fastify-socket.io';
 import apiRoutes from './routes/api';
 import { initDb } from './db';
 import { AppError } from './utils/errors';
@@ -60,10 +59,6 @@ export async function buildApp(config: AppConfig) {
   const fastify = Fastify({ logger: !config.isTest });
   const synapseConfig = loadConfig();
   
-  await fastify.register(socketio, {
-    cors: { origin: '*' }
-  });
-  
   await fastify.register(cors);
   await fastify.register(apiRoutes);
 
@@ -101,19 +96,10 @@ export async function buildApp(config: AppConfig) {
   await initDb();
 
   // Ingester initialization
-  const ingester = new Ingester(synapseConfig, (payload) => {
-    fastify.io.emit('session-update', payload);
-  });
-
-  if (!config.isTest) {
-    fastify.io.on('connection', (socket) => {
-      console.log('Client connected:', socket.id);
-    });
-  }
+  const ingester = new Ingester(synapseConfig);
 
   return {
     fastify,
-    io: fastify.io,
     ingester,
     start: () => {
       ingester.start();

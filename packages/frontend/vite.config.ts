@@ -19,7 +19,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'zustand', 'socket.io-client', 'lucide-react', '@tanstack/react-virtual'],
+          vendor: ['react', 'react-dom', 'zustand', 'lucide-react', '@tanstack/react-virtual'],
         },
       },
     },
@@ -29,11 +29,6 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:4000',
       '/files': 'http://localhost:4000',
-      '/socket.io': {
-        target: 'http://localhost:4000',
-        ws: true,
-        changeOrigin: true,
-      },
     },
   },
   test: {

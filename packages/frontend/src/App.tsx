@@ -1,14 +1,12 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useStore } from './store/useStore';
-import { io } from 'socket.io-client';
 import { ProjectList } from './components/ProjectList';
 import { SessionList } from './components/SessionList';
 import { ThemeProvider } from './components/theme-provider';
 import { SidebarProvider } from './components/layout/sidebar-context';
 import { ClientLayout } from './components/layout/client-layout';
 import { Dashboard } from './components/Dashboard';
-import type { SocketUpdatePayload } from '@synapse/shared';
 import { AlertCircle, RefreshCw, Activity, Cpu, Bell, Search } from 'lucide-react';
 
 import { CommandPalette } from './components/CommandPalette';
@@ -26,50 +24,14 @@ function Loading() {
 
 export const App = () => {
   const fetchProjects = useStore(state => state.fetchProjects);
-  const addMessage = useStore(state => state.addMessage);
-  const updateProject = useStore(state => state.updateProject);
-  const updateSession = useStore(state => state.updateSession);
+  const loading = useStore(state => state.loading);
   
   // 통합 에러 상태 감시
   const error = useStore(state => state.projectsError || state.sessionsError || state.messagesError);
-  
-  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     fetchProjects();
-    
-    // Force websocket transport to bypass Fastify HTTP polling 404s and Bun polyfill issues.
-    // Use the default proxy path to keep environment consistency.
-    const socket = io({
-      transports: ['websocket']
-    });
-
-    socket.on('connect', () => setIsConnected(true));
-    socket.on('disconnect', () => setIsConnected(false));
-    
-    socket.on('session-update', (data: SocketUpdatePayload) => {
-      console.log('Update received:', data);
-      
-      switch (data.type) {
-        case 'message':
-          if (data.message) addMessage(data.sessionId, data.message);
-          break;
-        case 'progress':
-          if (data.projectId) updateProject({ id: data.projectId, progress: data.progress });
-          break;
-        case 'status':
-          updateSession({ id: data.sessionId, status: data.status });
-          break;
-        case 'sync':
-          fetchProjects();
-          break;
-        default:
-          console.warn('Unknown update type received:', data.type);
-      }
-    });
-
-    return () => { socket.disconnect(); };
-  }, [fetchProjects, addMessage, updateProject, updateSession]);
+  }, [fetchProjects]);
 
   return (
     <BrowserRouter>
@@ -78,14 +40,6 @@ export const App = () => {
         <SidebarProvider>
           <ClientLayout>
             <div className="flex-1 flex flex-col min-h-0 relative">
-              {/* Status Bar */}
-              {!isConnected && (
-                <div className="absolute top-0 left-0 w-full bg-amber-600/90 text-white text-[10px] py-1 text-center z-50 flex items-center justify-center gap-2">
-                  <RefreshCw size={12} className="animate-spin" />
-                  Disconnected. Attempting to reconnect...
-                </div>
-              )}
-
               {/* Global Error Banner */}
               {error && (
                 <div className="absolute bottom-4 right-4 bg-rose-600 text-white px-4 py-3 rounded-lg shadow-2xl z-50 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
@@ -100,7 +54,7 @@ export const App = () => {
                 </div>
               )}
 
-              {/* Top Header for Desktop - Retained from original but adapted to new layout */}
+              {/* Top Header for Desktop */}
               <header className="hidden md:flex h-16 border-b border-slate-800 items-center justify-between px-8 shrink-0 bg-slate-900/50 backdrop-blur-sm z-10">
                   <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-indigo-600/20 rounded-lg flex items-center justify-center">
@@ -109,6 +63,14 @@ export const App = () => {
                       <span className="font-bold text-slate-100 tracking-tight text-lg">Synapse Monitor</span>
                   </div>
                   <div className="flex items-center gap-6 text-slate-500">
+                      <button 
+                        onClick={() => fetchProjects()} 
+                        title="Refresh data"
+                        className="p-1.5 hover:text-indigo-400 hover:bg-slate-800/60 rounded-md transition-colors flex items-center gap-1.5 text-xs text-slate-400"
+                      >
+                        <RefreshCw size={16} className={loading ? "animate-spin text-indigo-400" : ""} />
+                        <span>Refresh</span>
+                      </button>
                       <button className="hover:text-indigo-400 transition-colors"><Search size={20} /></button>
                       <button className="hover:text-indigo-400 transition-colors relative">
                           <Bell size={20} />
@@ -118,7 +80,7 @@ export const App = () => {
                       <div className="flex items-center gap-3">
                           <div className="flex flex-col items-end">
                               <span className="text-xs font-bold text-slate-300">Admin</span>
-                              <span className="text-[10px] text-emerald-500 font-bold">Online</span>
+                              <span className="text-[10px] text-slate-400 font-bold">Static Mode</span>
                           </div>
                           <div className="w-8 h-8 bg-slate-800 rounded-lg border border-slate-700"></div>
                       </div>

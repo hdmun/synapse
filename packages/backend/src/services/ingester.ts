@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
-import type { SynapseConfig, SocketUpdatePayload, UnifiedSession } from '@synapse/shared';
+import type { SynapseConfig, UnifiedSession } from '@synapse/shared';
 import { db } from '../db';
 import { projects, sessions, messages, plans } from '../db/schema';
 
@@ -27,8 +27,7 @@ export class Ingester {
   private dbQueue = new TaskQueue();
 
   constructor(
-    private config: SynapseConfig,
-    private onUpdate?: (payload: SocketUpdatePayload) => void
+    private config: SynapseConfig
   ) {}
 
   async start(): Promise<void> {
@@ -87,17 +86,10 @@ export class Ingester {
       const content = await fs.readFile(filePath, 'utf-8');
       const session: UnifiedSession = JSON.parse(content);
       
-      const projectId = await this.dbQueue.enqueue(() => this.syncToDb(session));
+      await this.dbQueue.enqueue(() => this.syncToDb(session));
       
       const dest = path.join(this.config.processedDir, relPath);
       await fs.rename(filePath, dest);
-
-      this.onUpdate?.({
-        type: 'sync',
-        sessionId: session.id,
-        projectId,
-        status: 'synced',
-      });
     } catch (error) {
       console.error(`[Ingester] Failed to process ${relPath}:`, error);
       const dest = path.join(this.config.errorDir, relPath);
@@ -138,13 +130,6 @@ export class Ingester {
           const session = await tx.query.sessions.findFirst({ where: eq(sessions.id, sessionId) });
           if (session?.projectId) {
             await tx.update(projects).set({ progress }).where(eq(projects.id, session.projectId));
-            
-            this.onUpdate?.({
-              type: 'progress',
-              sessionId,
-              projectId: session.projectId,
-              progress,
-            });
           }
         });
       });
@@ -154,18 +139,7 @@ export class Ingester {
   }
 
   private async ingestToolOutputFile(relPath: string): Promise<void> {
-    const parts = relPath.replace(/\\/g, '/').split('/');
-    if (parts.length < 3) return;
-    const sessionId = parts[1];
-    const fileName = parts[2];
-
-    if (!sessionId || !fileName) return;
-
-    this.onUpdate?.({
-      type: 'status',
-      sessionId,
-      status: `Tool output updated: ${fileName}`
-    });
+    // Tool output background tracking if needed
   }
 
   private async syncToDb(sessionData: UnifiedSession): Promise<string> {

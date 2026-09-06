@@ -1,12 +1,12 @@
 # Gemini Monitor App (Synapse)
 
-AI 코딩 에이전트(Gemini, GitHub Copilot 등)의 활동 내역을 실시간으로 수집, 동기화 및 시각화하기 위해 개발된 로컬 대시보드 애플리케이션입니다. 여러 로컬 프로젝트에 걸친 에이전트 상호작용 데이터를 단일 뷰에서 통합 관리하고 분석할 수 있습니다.
+AI 코딩 에이전트(Gemini, GitHub Copilot 등)의 활동 내역을 수집, 동기화 및 사후 디버깅하기 위해 개발된 로컬 대시보드 애플리케이션입니다. 여러 로컬 프로젝트에 걸친 에이전트 상호작용 데이터를 단일 뷰에서 통합 관리하고 정적으로 분석할 수 있습니다.
 
 ---
 
 ## 🌟 주요 특징 (Key Features)
 
-*   **실시간 양방향 모니터링:** WebSocket(Socket.io)을 활용하여 에이전트의 세션 생성 및 메시지 교환을 지연 없이 실시간으로 대시보드에 반영합니다.
+*   **백그라운드 자동 수집 & 사후 분석:** Chokidar를 기반으로 로컬 에이전트 활동 데이터를 백그라운드에서 안전하게 DB에 수집하고, 회고적 디버깅 및 분석을 위한 정적 UI를 제공합니다.
 *   **다중 에이전트 통합 로깅:** Gemini CLI, GitHub Copilot 등 서로 다른 AI 어시스턴트의 세션 데이터를 정규화하여 하나의 통일된 타임라인으로 제공합니다.
 *   **스마트 프로젝트 병합 (Project Consolidation):** 운영체제(Windows, macOS)에 따른 파일 시스템 경로의 대소문자 차이 및 구분자 불일치를 자동으로 정규화하여 중복 프로젝트 생성을 방지합니다.
 *   **직관적인 UI/UX 대시보드:** React, TailwindCSS, Recharts 기반의 모던 웹 인터페이스를 통해 프로젝트별 활성화 상태, 세션 빈도, 메시지 분석 차트를 제공합니다.
@@ -16,7 +16,7 @@ AI 코딩 에이전트(Gemini, GitHub Copilot 등)의 활동 내역을 실시간
 
 ## 🛠 기술 스택 (Tech Stack)
 
-이 프로젝트는 단일 레포지토리(Monorepo) 스타일로 프론트엔드와 백엔드를 모두 포함하고 있으며, 전 영역에 걸쳐 **TypeScript**를 사용합니다.
+이 프로젝트는 모노레포(Monorepo) 구조로 프론트엔드, 백엔드, 컬렉터, 공통 라이브러리를 나누어 관리하며, 전 영역에 걸쳐 **TypeScript**를 사용합니다.
 
 ### Frontend
 *   **프레임워크:** React 19, Vite
@@ -24,11 +24,10 @@ AI 코딩 에이전트(Gemini, GitHub Copilot 등)의 활동 내역을 실시간
 *   **스타일링:** TailwindCSS, clsx, tailwind-merge
 *   **UI/차트:** Recharts, Lucide React (아이콘)
 
-### Backend
+### Backend & Collector
 *   **런타임 환경:** Bun (빠른 실행 및 기본 TypeScript 지원)
 *   **서버 프레임워크:** Fastify
 *   **데이터베이스 & ORM:** SQLite (로컬 저장소), Drizzle ORM
-*   **실시간 통신:** Socket.io
 *   **파일 시스템 감시:** Chokidar
 *   **스키마 검증:** Zod
 
@@ -38,23 +37,14 @@ AI 코딩 에이전트(Gemini, GitHub Copilot 등)의 활동 내역을 실시간
 
 ```text
 synapse/
-├── src/
-│   ├── backend/         # Fastify 기반의 백엔드 서버
-│   │   ├── controllers/ # 라우트 핸들러 및 비즈니스 로직
-│   │   ├── db/          # Drizzle ORM 스키마 및 DB 설정
-│   │   ├── routes/      # REST API 및 WebSocket 라우트 정의
-│   │   ├── services/    # 데이터 동기화(SyncManager), 감시(Watcher) 로직
-│   │   └── index.ts     # 백엔드 진입점
-│   ├── frontend/        # React 기반의 프론트엔드 애플리케이션
-│   │   ├── components/  # 재사용 가능한 UI 컴포넌트 (ProjectList, MessageViewer 등)
-│   │   ├── store/       # Zustand 상태 관리
-│   │   ├── App.tsx      # 메인 라우터 및 레이아웃
-│   │   └── main.tsx     # 프론트엔드 진입점
-│   └── shared/          # 프론트/백엔드 공통 타입 및 스키마 (Zod)
-├── drizzle/             # 데이터베이스 마이그레이션 파일 (.sql)
-├── scripts/             # 유지보수 및 DB 병합 등 유틸리티 스크립트
-├── .gemini/rules/       # AI 에이전트를 위한 컨텍스트 및 아키텍처 가이드라인
-├── package.json         # 의존성 및 스크립트 정의
+├── packages/
+│   ├── backend/         # Fastify 기반의 백엔드 API 서버 및 Ingester
+│   ├── collector/       # 다양한 AI 에이전트 로그 수집기 (Gemini, Claude, Copilot 등)
+│   ├── frontend/        # React 기반의 정적 모니터링 및 분석 웹 애플리케이션
+│   └── shared/          # 패키지 간 공유 타입 및 Zod 스키마
+├── docs/                # 프로젝트 설정, 계획 및 ADR 문서
+├── scripts/             # 유지보수 및 DB 관리 스크립트
+├── package.json         # 모노레포 워크스페이스 정의 및 통합 스크립트
 └── README.md            # 프로젝트 소개 문서
 ```
 

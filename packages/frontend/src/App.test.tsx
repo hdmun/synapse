@@ -7,14 +7,6 @@ vi.mock('./store/useStore', () => ({
   useStore: vi.fn(),
 }));
 
-// Mocking socket.io-client
-vi.mock('socket.io-client', () => ({
-  io: vi.fn(() => ({
-    on: vi.fn(),
-    disconnect: vi.fn(),
-  })),
-}));
-
 // Mock react-virtual
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: () => ({

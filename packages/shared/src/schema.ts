@@ -105,17 +105,6 @@ export const messageSchema = z.object({
   outputTokens: z.number().optional(),
 });
 
-export const socketUpdateTypeSchema = z.enum(['message', 'progress', 'status', 'sync']);
-
-export const socketUpdatePayloadSchema = z.object({
-  type: socketUpdateTypeSchema,
-  sessionId: z.string(),
-  projectId: z.string().optional(),
-  message: messageSchema.optional(),
-  progress: z.number().optional(),
-  status: z.string().optional(),
-});
-
 export type TokenTaxonomy = z.infer<typeof tokenTaxonomySchema>;
 export type FeatureAdoptionTaxonomy = z.infer<typeof featureAdoptionTaxonomySchema>;
 export type GeminiEnricher = z.infer<typeof geminiEnricherSchema>;
@@ -128,7 +117,5 @@ export type Session = z.infer<typeof sessionSchema>;
 export type Thought = z.infer<typeof thoughtSchema>;
 export type ToolCall = z.infer<typeof toolCallSchema>;
 export type Message = z.infer<typeof messageSchema>;
-export type SocketUpdateType = z.infer<typeof socketUpdateTypeSchema>;
-export type SocketUpdatePayload = z.infer<typeof socketUpdatePayloadSchema>;
 
 export const TYPES_VERSION = '1.0.0';
