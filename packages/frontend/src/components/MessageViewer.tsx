@@ -206,32 +206,36 @@ const MessageListItem = memo(({
                 </div>
               )}
 
-              {/* Thought Flow (Gemini Only - Only show in the last part or once) */}
-              {idx === parsedParts.length - 1 && !isUser && m.enrichers?.gemini?.thoughtTrace && m.enrichers.gemini.thoughtTrace.length > 0 && (
-                <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
-                    <button 
-                      onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
-                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                      aria-expanded={isThoughtExpanded}
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <Terminal size={14} className="text-slate-500" />
-                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
+              {/* Thought Flow (Core Thought Trace) */}
+              {idx === parsedParts.length - 1 && !isUser && (() => {
+                const traces = (m.thoughtTraces && m.thoughtTraces.length > 0) ? m.thoughtTraces : m.enrichers?.gemini?.thoughtTrace;
+                if (!traces || traces.length === 0) return null;
+                return (
+                  <div className="mt-5 bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
+                      <button 
+                        onClick={() => setIsThoughtExpanded(!isThoughtExpanded)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                        aria-expanded={isThoughtExpanded}
+                      >
+                          <div className="flex items-center gap-2.5">
+                              <Terminal size={14} className="text-slate-500" />
+                              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Thought Process</span>
+                          </div>
+                          {isThoughtExpanded ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
+                      </button>
+                      {isThoughtExpanded && (
+                        <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
+                            {traces.map((t, traceIdx) => (
+                              <div key={traceIdx} className="flex gap-2 text-left">
+                                <span className="text-indigo-500 shrink-0">&gt;</span>
+                                <span>{t.subject ? `${t.subject}: ` : ''}{t.description}</span>
+                              </div>
+                            ))}
                         </div>
-                        {isThoughtExpanded ? <ChevronDown size={14} className="text-slate-600" /> : <ChevronRight size={14} className="text-slate-600" />}
-                    </button>
-                    {isThoughtExpanded && (
-                      <div className="px-5 pb-4 pt-1 space-y-1.5 font-mono text-[11px] text-slate-500 border-t border-slate-800/50 mt-1">
-                          {m.enrichers.gemini.thoughtTrace.map((t, idx) => (
-                            <div key={idx} className="flex gap-2 text-left">
-                              <span className="text-indigo-500 shrink-0">&gt;</span>
-                              <span>{t.subject}: {t.description}</span>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                </div>
-              )}
+                      )}
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

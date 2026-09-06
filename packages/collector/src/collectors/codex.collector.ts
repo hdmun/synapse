@@ -160,6 +160,7 @@ export class CodexCollector extends BaseCollector {
                   timestamp: timestamp
                 });
                 currentMessage.thoughts = JSON.stringify(thoughtsList);
+                currentMessage.thoughtTraces = thoughtsList;
               } else {
                 const newMsgId = `msg-${msgIndex++}`;
                 const thoughtsList = [{
@@ -174,6 +175,7 @@ export class CodexCollector extends BaseCollector {
                   content: '',
                   timestamp: timestamp,
                   thoughts: JSON.stringify(thoughtsList),
+                  thoughtTraces: thoughtsList,
                   toolCalls: []
                 };
                 messages.push(currentMessage);

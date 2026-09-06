@@ -1,17 +1,17 @@
-import { TokenTaxonomy, FeatureAdoptionTaxonomy, Enrichers, ToolCall } from './schema';
+import { TokenTaxonomy, Enrichers, ToolCall, ThoughtTrace } from './schema';
 
 export interface UnifiedMessage {
   id: string;
   type: 'user' | 'agent' | 'info' | 'error';
   content: string;
   timestamp: Date;
-  // Tier 1: Core Taxonomy
+  // Tier 1: Core Taxonomy & Minimum Contract
   tokens?: TokenTaxonomy;
-  features?: FeatureAdoptionTaxonomy[];
   toolCalls?: ToolCall[];
+  thoughtTraces?: ThoughtTrace[];
   // Tier 2: Source Enrichers
   enrichers?: Enrichers;
-  // Collector fields directly assigned
+  // Deprecated/Transitional fields
   thoughts?: string;
   inputTokens?: number;
   outputTokens?: number;

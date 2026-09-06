@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import type { SynapseConfig, UnifiedSession } from '@synapse/shared';
 import { db } from '../db';
-import { projects, sessions, messages, plans } from '../db/schema';
+import { projects, sessions, messages } from '../db/schema';
 
 class TaskQueue {
   private promise: Promise<any> = Promise.resolve();
@@ -22,7 +22,6 @@ class TaskQueue {
 
 export class Ingester {
   private sessionWatcher?: chokidar.FSWatcher;
-  private planWatcher?: chokidar.FSWatcher;
   private toolOutputWatcher?: chokidar.FSWatcher;
   private dbQueue = new TaskQueue();
 
@@ -34,7 +33,6 @@ export class Ingester {
     await fs.mkdir(this.config.unifiedDir, { recursive: true });
     await fs.mkdir(this.config.processedDir, { recursive: true });
     await fs.mkdir(this.config.errorDir, { recursive: true });
-    await fs.mkdir(this.config.plansDir, { recursive: true });
     await fs.mkdir(this.config.toolOutputsDir, { recursive: true });
 
     // 1. Scan and process existing files in unified/ first
@@ -46,11 +44,6 @@ export class Ingester {
       ignoreInitial: true,
       persistent: true,
     });
-    this.planWatcher = chokidar.watch('**/*.md', {
-      cwd: this.config.plansDir,
-      ignoreInitial: true,
-      persistent: true,
-    });
     this.toolOutputWatcher = chokidar.watch('**/*.txt', {
       cwd: this.config.toolOutputsDir,
       ignoreInitial: true,
@@ -59,9 +52,6 @@ export class Ingester {
 
     this.sessionWatcher.on('add', (file) => this.ingestSessionFile(file));
     this.sessionWatcher.on('change', (file) => this.ingestSessionFile(file));
-    
-    this.planWatcher.on('add', (file) => this.ingestPlanFile(file));
-    this.planWatcher.on('change', (file) => this.ingestPlanFile(file));
     
     this.toolOutputWatcher.on('add', (file) => this.ingestToolOutputFile(file));
     this.toolOutputWatcher.on('change', (file) => this.ingestToolOutputFile(file));
@@ -94,47 +84,6 @@ export class Ingester {
       console.error(`[Ingester] Failed to process ${relPath}:`, error);
       const dest = path.join(this.config.errorDir, relPath);
       await fs.rename(filePath, dest).catch(() => {});
-    }
-  }
-
-  private async ingestPlanFile(relPath: string): Promise<void> {
-    const filePath = path.join(this.config.plansDir, relPath);
-    const parts = relPath.replace(/\\/g, '/').split('/');
-    if (parts.length < 3) return;
-    const sessionId = parts[1];
-
-    if (!sessionId) return;
-
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      const tasks = content.match(/- \[[ xX]\]/g) || [];
-      const completed = tasks.filter(t => t.includes('[x]') || t.includes('[X]')).length;
-      const total = tasks.length;
-      const progress = total > 0 ? (completed / total) * 100 : 0;
-
-      await this.dbQueue.enqueue(async () => {
-        await db.transaction(async (tx) => {
-          await tx.insert(plans).values({
-            id: filePath,
-            sessionId: sessionId,
-            projectId: this.deriveProjectId(sessionId), // Fallback fallback mapping
-            content: content,
-            totalTasks: total,
-            completedTasks: completed,
-            lastUpdated: new Date(),
-          }).onConflictDoUpdate({
-            target: plans.id,
-            set: { content, totalTasks: total, completedTasks: completed, lastUpdated: new Date() }
-          });
-
-          const session = await tx.query.sessions.findFirst({ where: eq(sessions.id, sessionId) });
-          if (session?.projectId) {
-            await tx.update(projects).set({ progress }).where(eq(projects.id, session.projectId));
-          }
-        });
-      });
-    } catch (err) {
-      console.error(`[Ingester] Error syncing plan ${filePath}:`, err);
     }
   }
 
@@ -174,6 +123,7 @@ export class Ingester {
         source: sessionData.source,
         startTime: new Date(sessionData.startTime),
         lastUpdated: new Date(sessionData.lastUpdated),
+        status: 'active',
         model: sessionData.model || 'unknown',
         summary: sessionData.summary,
         totalTokens: sessionData.totalTokens ? JSON.stringify(sessionData.totalTokens) : null,
@@ -192,8 +142,29 @@ export class Ingester {
       // 3. Update Messages
       for (const msg of sessionData.messages) {
         let msgType = msg.type;
-        if (msg.type === 'agent' || msg.type === 'gemini') {
+        if (msg.type === 'agent' || (msg.type as any) === 'gemini') {
           msgType = 'agent';
+        }
+
+        // Normalize thoughtTraces
+        let thoughtTraces = msg.thoughtTraces;
+        if (!thoughtTraces && msg.enrichers?.gemini?.thoughtTrace) {
+          thoughtTraces = msg.enrichers.gemini.thoughtTrace.map(t => ({
+            subject: t.subject,
+            description: t.description,
+            timestamp: t.timestamp
+          }));
+        } else if (!thoughtTraces && msg.thoughts) {
+          try {
+            const parsed = JSON.parse(msg.thoughts);
+            if (Array.isArray(parsed)) {
+              thoughtTraces = parsed.map((item: any) => ({
+                subject: item.subject || 'Reasoning',
+                description: item.description || item.text || (typeof item === 'string' ? item : JSON.stringify(item)),
+                timestamp: item.timestamp ? new Date(item.timestamp).toISOString() : undefined,
+              }));
+            }
+          } catch {}
         }
 
         await tx.insert(messages).values({
@@ -203,16 +174,16 @@ export class Ingester {
           content: msg.content,
           timestamp: new Date(msg.timestamp),
           tokens: msg.tokens ? JSON.stringify(msg.tokens) : null,
-          features: msg.features ? JSON.stringify(msg.features) : JSON.stringify([]),
           toolCalls: msg.toolCalls ? JSON.stringify(msg.toolCalls) : JSON.stringify([]),
+          thoughtTraces: thoughtTraces ? JSON.stringify(thoughtTraces) : JSON.stringify([]),
           enrichers: msg.enrichers ? JSON.stringify(msg.enrichers) : null,
         }).onConflictDoUpdate({
           target: messages.id,
           set: {
             content: msg.content,
             tokens: msg.tokens ? JSON.stringify(msg.tokens) : null,
-            features: msg.features ? JSON.stringify(msg.features) : JSON.stringify([]),
             toolCalls: msg.toolCalls ? JSON.stringify(msg.toolCalls) : JSON.stringify([]),
+            thoughtTraces: thoughtTraces ? JSON.stringify(thoughtTraces) : JSON.stringify([]),
             enrichers: msg.enrichers ? JSON.stringify(msg.enrichers) : null,
           }
         });
@@ -233,7 +204,6 @@ export class Ingester {
 
   async stop(): Promise<void> {
     await this.sessionWatcher?.close();
-    await this.planWatcher?.close();
     await this.toolOutputWatcher?.close();
   }
 }

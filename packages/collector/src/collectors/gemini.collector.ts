@@ -132,13 +132,15 @@ export class GeminiCollector extends BaseCollector {
           };
 
           if (m.thoughts && m.thoughts.length > 0) {
+            const traces = m.thoughts.map((t: any) => ({
+              subject: t.subject,
+              description: t.description,
+              timestamp: new Date(t.timestamp).toISOString()
+            }));
+            msg.thoughtTraces = traces;
             msg.enrichers = {
               gemini: {
-                thoughtTrace: m.thoughts.map((t: any) => ({
-                  subject: t.subject,
-                  description: t.description,
-                  timestamp: new Date(t.timestamp).toISOString()
-                }))
+                thoughtTrace: traces
               }
             };
           }

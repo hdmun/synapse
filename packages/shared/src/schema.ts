@@ -11,7 +11,8 @@ export const projectSchema = z.object({
   id: z.string(),
   name: z.string(),
   path: z.string(),
-  progress: z.number().min(0).max(100),
+  progress: z.number().min(0).max(100).optional(),
+  totalTokens: z.number().optional(),
   lastUpdated: z.string().optional(),
   agents: z.array(z.string()).optional(),
 });
@@ -30,36 +31,27 @@ export const sessionSchema = z.object({
   estimatedCost: z.number().optional(),
 });
 
-export const thoughtSchema = z.object({
-  id: z.number().optional(),
-  messageId: z.string(),
-  subject: z.string(),
+export const thoughtTraceSchema = z.object({
+  subject: z.string().optional(),
   description: z.string(),
-  timestamp: z.string(),
+  timestamp: z.string().optional(),
 });
+
+export const thoughtSchema = thoughtTraceSchema;
 
 export const toolCallSchema = z.object({
-  id: z.string(),
-  messageId: z.string(),
+  id: z.string().optional(),
+  messageId: z.string().optional(),
   name: z.string(),
-  args: z.string(),
+  args: z.string().optional(),
   result: z.string().optional(),
-  status: z.string(),
-  timestamp: z.string(),
-});
-
-export const featureAdoptionTaxonomySchema = z.object({
-  category: z.enum(['search', 'edit', 'build', 'test', 'deploy', 'chat', 'unknown']).default('unknown'),
-  toolName: z.string().optional(),
+  status: z.string().optional(),
+  timestamp: z.string().optional(),
 });
 
 // Source Enrichers
 export const geminiEnricherSchema = z.object({
-  thoughtTrace: z.array(z.object({
-    subject: z.string().optional(),
-    description: z.string(),
-    timestamp: z.string(),
-  })).optional(),
+  thoughtTrace: z.array(thoughtTraceSchema).optional(),
 });
 
 export const claudeEnricherSchema = z.object({
@@ -93,20 +85,19 @@ export const messageSchema = z.object({
   type: z.string(),
   content: z.string(),
   timestamp: z.string(),
-  // Tier 1: Core Taxonomy
+  // Tier 1: Core Taxonomy & Minimum Contract
   tokens: tokenTaxonomySchema.optional(),
-  features: z.array(featureAdoptionTaxonomySchema).optional(),
   toolCalls: z.array(toolCallSchema).optional(),
+  thoughtTraces: z.array(thoughtTraceSchema).optional(),
   // Tier 2: Source Enrichers
   enrichers: enrichersSchema.optional(),
-  // Collector fields directly assigned
+  // Transitional fields
   thoughts: z.string().optional(),
   inputTokens: z.number().optional(),
   outputTokens: z.number().optional(),
 });
 
 export type TokenTaxonomy = z.infer<typeof tokenTaxonomySchema>;
-export type FeatureAdoptionTaxonomy = z.infer<typeof featureAdoptionTaxonomySchema>;
 export type GeminiEnricher = z.infer<typeof geminiEnricherSchema>;
 export type ClaudeEnricher = z.infer<typeof claudeEnricherSchema>;
 export type CopilotEnricher = z.infer<typeof copilotEnricherSchema>;
@@ -114,8 +105,10 @@ export type Enrichers = z.infer<typeof enrichersSchema>;
 
 export type Project = z.infer<typeof projectSchema>;
 export type Session = z.infer<typeof sessionSchema>;
-export type Thought = z.infer<typeof thoughtSchema>;
+export type ThoughtTrace = z.infer<typeof thoughtTraceSchema>;
+export type Thought = ThoughtTrace;
 export type ToolCall = z.infer<typeof toolCallSchema>;
 export type Message = z.infer<typeof messageSchema>;
 
 export const TYPES_VERSION = '1.0.0';
+

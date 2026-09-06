@@ -60,4 +60,43 @@ describe("Session Controller", () => {
     expect(result[0].timestamp.getTime()).toBeLessThan(result[1].timestamp.getTime());
     expect(result[1].timestamp.getTime()).toBeLessThan(result[2].timestamp.getTime());
   });
+
+  test("getSessionDetails parses thoughtTraces and toolCalls correctly", async () => {
+    const projectId = "test-project-2";
+    const sessionId = "test-session-2";
+
+    await db.insert(projects).values({
+      id: projectId,
+      name: "Test Project 2",
+      path: "/test/path/2",
+      lastUpdated: new Date()
+    });
+
+    await db.insert(sessions).values({
+      id: sessionId,
+      projectId: projectId,
+      startTime: new Date(),
+      lastUpdated: new Date(),
+      model: "claude-3-5-sonnet"
+    });
+
+    const mockToolCalls = [{ name: "read_file", args: "{\"path\":\"foo.ts\"}", status: "success" }];
+    const mockThoughtTraces = [{ subject: "Thinking", description: "Analyzing the request..." }];
+
+    await db.insert(messages).values({
+      id: "m1",
+      sessionId,
+      type: "agent",
+      content: "Here is the result",
+      timestamp: new Date(),
+      toolCalls: JSON.stringify(mockToolCalls),
+      thoughtTraces: JSON.stringify(mockThoughtTraces),
+    });
+
+    const result = await getSessionDetails(sessionId);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].toolCalls).toEqual(mockToolCalls);
+    expect(result[0].thoughtTraces).toEqual(mockThoughtTraces);
+  });
 });

@@ -36,6 +36,20 @@
       "when": 1782458162211,
       "tag": "0004_dazzling_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788689281255,
+      "tag": "0005_drop_plans_and_features",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788689293062,
+      "tag": "0006_add_thought_traces",
+      "breakpoints": true
     }
   ]
 }

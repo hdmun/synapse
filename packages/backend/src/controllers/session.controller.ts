@@ -11,8 +11,8 @@ export async function getSessionDetails(sessionId: string) {
   return msgs.map(m => ({
     ...m,
     tokens: m.tokens ? JSON.parse(m.tokens) : undefined,
-    features: m.features ? JSON.parse(m.features) : [],
     toolCalls: m.toolCalls ? JSON.parse(m.toolCalls) : [],
+    thoughtTraces: m.thoughtTraces ? JSON.parse(m.thoughtTraces) : [],
     enrichers: m.enrichers ? JSON.parse(m.enrichers) : undefined,
   }));
 }

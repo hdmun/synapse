@@ -158,6 +158,11 @@ export class ClaudeCollector extends BaseCollector {
           };
 
           if (thoughts.length > 0) {
+            msg.thoughtTraces = thoughts.map((t: any) => ({
+              subject: 'Thinking',
+              description: t.thinking || (typeof t === 'string' ? t : JSON.stringify(t)),
+              timestamp: ts.toISOString(),
+            }));
             msg.thoughts = JSON.stringify(thoughts);
           }
           if (toolCalls.length > 0) {

@@ -43,9 +43,10 @@ export const messages = sqliteTable('messages', {
   type: text('type', { enum: ['user', 'agent', 'info', 'error'] }).notNull(),
   content: text('content').notNull(),
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
-  // Tier 1: Core Taxonomy
+  // Tier 1: Core Taxonomy & Minimum Contract
   tokens: text('tokens'), // JSON string of TokenTaxonomy
   toolCalls: text('tool_calls'), // JSON string of ToolCall[]
+  thoughtTraces: text('thought_traces'), // JSON string of ThoughtTrace[]
   // Tier 2: Source Enrichers
   enrichers: text('enrichers'), // JSON string of Enrichers
 });
