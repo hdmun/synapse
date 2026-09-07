@@ -50,7 +50,7 @@ describe('Collectors Real-time Functionality', () => {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       expect(onSessionUpdate).toHaveBeenCalled();
-      const event = onSessionUpdate.mock.calls[0][0];
+      const event = onSessionUpdate.mock.calls[0]![0];
       const session = event.session;
       expect(session.id).toBe('session-123');
       expect(session.source).toBe('gemini');
@@ -88,7 +88,7 @@ describe('Collectors Real-time Functionality', () => {
       await new Promise(resolve => setTimeout(resolve, 800));
 
       expect(onSessionUpdate).toHaveBeenCalled();
-      const event = onSessionUpdate.mock.calls[0][0];
+      const event = onSessionUpdate.mock.calls[0]![0];
       const session = event.session;
       expect(session.id).toBe('codex-123');
       expect(session.source).toBe('codex');
@@ -141,7 +141,7 @@ describe('Collectors Real-time Functionality', () => {
       const calls = onSessionUpdate.mock.calls;
       const foundCall = calls.find(call => call[0].session.id === 'copilot-123');
       expect(foundCall).toBeDefined();
-      const event = foundCall[0];
+      const event = foundCall![0];
       expect(event.session.id).toBe('copilot-123');
       expect(event.session.source).toBe('copilot');
       expect(event.raw).toBeDefined();
