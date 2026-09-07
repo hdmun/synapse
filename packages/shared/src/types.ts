@@ -1,4 +1,4 @@
-import { TokenTaxonomy, Enrichers, ToolCall, ThoughtTrace } from './schema';
+import type { TokenTaxonomy, Enrichers, ToolCall, ThoughtTrace } from './schema';
 
 export interface UnifiedMessage {
   id: string;

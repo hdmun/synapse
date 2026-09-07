@@ -46,11 +46,11 @@ describe("Project Controller - Token and Cost Analytics", () => {
     const stats = await getTokenStats();
 
     expect(stats).toHaveLength(1);
-    expect(stats[0].name).toBe("Synapse Core");
-    expect(stats[0].baseTokens).toBe(1500);
-    expect(stats[0].reasoningTokens).toBe(300);
-    expect(stats[0].tokens).toBe(1800);
-    expect(stats[0].estimatedCost).toBeCloseTo(0.0022, 4);
+    expect(stats[0]!.name).toBe("Synapse Core");
+    expect(stats[0]!.baseTokens).toBe(1500);
+    expect(stats[0]!.reasoningTokens).toBe(300);
+    expect(stats[0]!.tokens).toBe(1800);
+    expect(stats[0]!.estimatedCost).toBeCloseTo(0.0022, 4);
   });
 
   test("getOverviewStats aggregates global token taxonomy and scoped costs", async () => {

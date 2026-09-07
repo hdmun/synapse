@@ -52,13 +52,13 @@ describe("Session Controller", () => {
 
     // 3. Verify
     expect(result).toHaveLength(3);
-    expect(result[0].id).toBe("m1");
-    expect(result[1].id).toBe("m2");
-    expect(result[2].id).toBe("m3");
+    expect(result[0]!.id).toBe("m1");
+    expect(result[1]!.id).toBe("m2");
+    expect(result[2]!.id).toBe("m3");
     
     // Check timestamps are strictly increasing
-    expect(result[0].timestamp.getTime()).toBeLessThan(result[1].timestamp.getTime());
-    expect(result[1].timestamp.getTime()).toBeLessThan(result[2].timestamp.getTime());
+    expect(result[0]!.timestamp.getTime()).toBeLessThan(result[1]!.timestamp.getTime());
+    expect(result[1]!.timestamp.getTime()).toBeLessThan(result[2]!.timestamp.getTime());
   });
 
   test("getSessionDetails parses thoughtTraces and toolCalls correctly", async () => {
@@ -96,7 +96,7 @@ describe("Session Controller", () => {
     const result = await getSessionDetails(sessionId);
 
     expect(result).toHaveLength(1);
-    expect(result[0].toolCalls).toEqual(mockToolCalls);
-    expect(result[0].thoughtTraces).toEqual(mockThoughtTraces);
+    expect(result[0]!.toolCalls).toEqual(mockToolCalls);
+    expect(result[0]!.thoughtTraces).toEqual(mockThoughtTraces);
   });
 });
