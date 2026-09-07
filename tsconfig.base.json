@@ -19,6 +19,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "types": ["bun-types", "node", "vitest/globals"]
+    "types": ["bun", "node"]
   }
 }
