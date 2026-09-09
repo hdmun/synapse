@@ -1,13 +1,14 @@
 import { BaseCollector } from './base.collector';
 import type { UnifiedMessage, UnifiedSession } from '@synapse/shared';
-import chokidar from 'chokidar';
+import * as chokidar from 'chokidar';
+import type { FSWatcher } from 'chokidar';
 import { Glob } from 'bun';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { homedir } from 'os';
 
 export class ClaudeCollector extends BaseCollector {
-  private watcher?: chokidar.FSWatcher;
+  private watcher?: FSWatcher;
   private targetDir: string;
   private debounceMap = new Map<string, NodeJS.Timeout>();
 
