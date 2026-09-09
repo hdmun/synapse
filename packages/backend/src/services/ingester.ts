@@ -1,4 +1,5 @@
-import chokidar from 'chokidar';
+import * as chokidar from 'chokidar';
+import type { FSWatcher } from 'chokidar';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
@@ -21,8 +22,8 @@ class TaskQueue {
 }
 
 export class Ingester {
-  private sessionWatcher?: chokidar.FSWatcher;
-  private toolOutputWatcher?: chokidar.FSWatcher;
+  private sessionWatcher?: FSWatcher;
+  private toolOutputWatcher?: FSWatcher;
   private dbQueue = new TaskQueue();
 
   constructor(
