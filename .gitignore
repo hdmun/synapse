@@ -41,3 +41,6 @@ data/
 *.db-*
 *.bak
 
+
+# claude code local settings
+.claude/settings.local.json
