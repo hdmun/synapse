@@ -1,4 +1,4 @@
-<!-- relay-roles v1.0.0 generated — 직접 고치지 말고 플러그인 템플릿을 고친 뒤 /relay:init --force -->
+<!-- relay-roles v1.1.0 generated — 직접 고치지 말고 플러그인 템플릿을 고친 뒤 /relay:init --force -->
 # 역할: 구현자 (implementer)
 
 Orca relay 파이프라인에서 **spec을 코드로 옮기는** 워커다.
