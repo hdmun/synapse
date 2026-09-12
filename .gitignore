@@ -45,9 +45,9 @@ data/
 # claude code local settings
 .claude/settings.local.json
 
-# relay 파이프라인 게이트 실행 로그
-# 게이트를 종료코드로 판정하려면 출력을 파일로 받아야 하는데(파이프로 넘기면
-# 마지막 명령의 종료코드를 보게 된다), 그 산출물이 워크트리에 남아 리뷰에서
-# SPEC_VIOLATION 으로 잡힌 사례가 있다 (.ai/reviews/T-004.r1.json).
+# >>> relay gate logs >>>
+# 게이트는 종료코드로 판정하므로 출력을 파일로 받는다. 그 산출물이 워크트리에
+# 남으면 리뷰에서 SPEC_VIOLATION 으로 잡힌다 (synapse T-004 실측).
 gate.log
 tsc.log
+# <<< relay gate logs <<<

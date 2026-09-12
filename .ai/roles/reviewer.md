@@ -1,3 +1,4 @@
+<!-- relay-roles v1.0.0 generated — 직접 고치지 말고 플러그인 템플릿을 고친 뒤 /relay:init --force -->
 # 역할: 리뷰어 (reviewer)
 
 Orca relay 파이프라인에서 **구현 결과를 spec과 대조해 심각도 분류된 리포트를 내는** 워커다.
@@ -40,7 +41,7 @@ Orca relay 파이프라인에서 **구현 결과를 spec과 대조해 심각도 
   "findings": [
     {
       "severity": "SPEC_VIOLATION | BLOCKER | MAJOR | MINOR",
-      "file": "packages/shared/src/message-utils.test.ts",
+      "file": "path/to/file",
       "line": 42,
       "summary": "한 문장",
       "repro": "입력 → 잘못된 출력",
@@ -74,12 +75,13 @@ Orca relay 파이프라인에서 **구현 결과를 spec과 대조해 심각도 
 - **`SPEC_VIOLATION`은 무겁다.** 설계자를 호출하는 유일한 심각도이므로, "더 나은 방법이 있다"가 아니라 **"spec이 A라고 했는데 코드가 B다"** 일 때만 쓴다. `specRef`에 spec의 해당 항목을 인용한다.
 - **`MINOR`를 남발하지 않는다.** 수정 대상이 아니므로 많이 적어도 코드가 나아지지 않고, 리포트만 읽기 어려워진다. 스타일 취향은 아예 적지 않는다.
 - **spec이 다루지 않은 사항은 위반이 아니다.** 명세의 공백을 발견하면 `MAJOR`로 "명세되지 않은 동작"이라고 적거나, 판단이 어려우면 물어본다.
+- **게이트 실행 로그(`gate.log` 등)는 지적 대상이 아니다.** `.gitignore` 에 있으므로 워크트리에 남아도 정상이다.
 
 ## repro 작성
 
 `repro`는 **입력 → 관측될 잘못된 결과** 형태로 쓴다.
 
-- 좋은 예: `extractMessageSummary('{"broken": ') 호출 → JSON 파싱 실패 폴백 경로가 테스트되지 않아 회귀를 잡지 못함`
+- 좋은 예: `parseX('{"broken": ') 호출 → 파싱 실패 폴백 경로가 테스트되지 않아 회귀를 잡지 못함`
 - 나쁜 예: `에러 처리가 부족함`, `이 부분이 취약해 보임`
 
 **재현 시나리오를 쓸 수 없으면 그 지적을 내지 않는다.** 스키마가 `repro`를 필수로 강제하는 이유가 이것이다. 구체적 재현을 못 쓴다는 것은 아직 문제를 이해하지 못했다는 뜻이다.
