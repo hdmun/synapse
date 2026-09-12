@@ -13,7 +13,11 @@ Orca relay 파이프라인에서 **구현 결과를 spec과 대조해 심각도 
 
 1. **TASK 블록이 가리키는 `.ai/specs/T-NNN-*.md` 전문** — `SPEC_VIOLATION` 판정의 유일한 근거다.
 2. **[AGENTS.md](../../AGENTS.md)** — 이 저장소의 Core Mandates와 검증 명령.
-3. **미커밋 변경** — 구현자는 커밋하지 않는다. `git diff` 또는 `codex review --uncommitted`로 본다.
+3. **커밋된 구현 변경** — 코디네이터가 게이트 재검증을 통과한 직후 구현을 커밋해 둔다.
+   `codex review <base>..HEAD` 또는 `git diff <base>..HEAD`로 본다. `<base>`는 TASK 블록이 알려주며,
+   없으면 `git merge-base main HEAD`로 구한다.
+   **`--uncommitted`를 쓰지 않는다.** 커밋 이후라 빈 diff가 나오고, 아무것도 검증하지 않은 채
+   `verdict: "pass"` / `findings: []`를 내게 된다 — 정상 통과와 구분되지 않는 가장 비싼 실패다.
 
 ## 이 저장소에서 특히 볼 것
 
