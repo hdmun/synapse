@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 import { BaseCollector } from './base.collector';
-import type { UnifiedSession, UnifiedMessage } from '@synapse/shared';
+import type { UnifiedSession, UnifiedMessage, ThoughtTrace } from '@synapse/shared';
 import { extractMessageSummary } from '@synapse/shared';
 
 export class CodexCollector extends BaseCollector {
@@ -106,7 +106,7 @@ export class CodexCollector extends BaseCollector {
       let msgIndex = 0;
 
       const rawLines: any[] = [];
-      const thoughtsAccMap = new Map<string, any[]>();
+      const thoughtsAccMap = new Map<string, ThoughtTrace[]>();
 
       for await (const line of rl) {
         if (!line.trim()) continue;
@@ -157,7 +157,7 @@ export class CodexCollector extends BaseCollector {
                 thoughtsList.push({
                   subject: 'Reasoning',
                   description: reasoningText,
-                  timestamp: timestamp
+                  timestamp: timestamp.toISOString()
                 });
                 currentMessage.thoughts = JSON.stringify(thoughtsList);
                 currentMessage.thoughtTraces = thoughtsList;
@@ -166,7 +166,7 @@ export class CodexCollector extends BaseCollector {
                 const thoughtsList = [{
                   subject: 'Reasoning',
                   description: reasoningText,
-                  timestamp: timestamp
+                  timestamp: timestamp.toISOString()
                 }];
                 thoughtsAccMap.set(newMsgId, thoughtsList);
                 currentMessage = {

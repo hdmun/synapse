@@ -102,6 +102,7 @@ export class ClaudeCollector extends BaseCollector {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      if (line === undefined) continue;
       try {
         const data = JSON.parse(line);
         rawList.push(data);
