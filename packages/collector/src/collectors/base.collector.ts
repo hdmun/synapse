@@ -11,16 +11,17 @@ export abstract class BaseCollector extends EventEmitter implements Collector {
     this.emit('session-update', event);
   }
 
-  protected emitError(error: Error): void {
-    this.emit('error', error);
+  protected emitError(error: unknown): void {
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.emit('error', err);
   }
 
   // Type-safe event listeners (overriding EventEmitter's default)
-  public on<K extends keyof CollectorEvents>(event: K, listener: CollectorEvents[K]): this {
+  public override on<K extends keyof CollectorEvents>(event: K, listener: CollectorEvents[K]): this {
     return super.on(event, listener as any);
   }
 
-  public off<K extends keyof CollectorEvents>(event: K, listener: CollectorEvents[K]): this {
+  public override off<K extends keyof CollectorEvents>(event: K, listener: CollectorEvents[K]): this {
     return super.off(event, listener as any);
   }
 }
