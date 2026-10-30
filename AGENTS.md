@@ -1,38 +1,35 @@
-# AI Agents Context & Rules
+# AI 에이전트 컨텍스트 및 규칙 (AI Agents Context & Rules)
 
-This project uses highly modularized rules to provide specialized context to AI agents. 
-AI agents must read the appropriate markdown files below based on the exact context of the requested task to ensure consistent and high-quality outputs.
+이 프로젝트는 AI 에이전트에게 전문화된 컨텍스트를 제공하기 위해 고도로 모듈화된 규칙을 사용합니다.
+AI 에이전트는 일관되고 높은 품질의 결과물을 보장하기 위해 요청된 작업의 정확한 맥락에 따라 아래 마크다운 파일들을 반드시 읽고 따라야 합니다.
 
-## Core Mandates for Consistent Work Quality
-To maintain the integrity and consistency of the codebase, AI agents MUST adhere to the following principles:
+## 일관된 작업 품질을 위한 핵심 원칙 (Core Mandates)
+코드베이스의 무결성과 일관성을 유지하기 위해 AI 에이전트는 다음 원칙을 반드시 준수해야 합니다:
 
-1. **Verify Before Action:** Always read existing code, types, and configurations before making changes. Do not guess the structure. Use search (`grep_search`, `glob`) and read (`read_file`) tools to understand the surrounding context.
-2. **Follow Existing Patterns:** Strictly adhere to the project's established architectural patterns, naming conventions, and file structures. Do not introduce new libraries or frameworks unless explicitly instructed.
-3. **Atomic & Focused Changes:** Keep your modifications strictly related to the requested task. Do not perform unrelated refactoring.
-4. **Type Safety & Linters:** Never bypass TypeScript strict mode (e.g., avoid `any`, `@ts-ignore`). Use explicit type guards and proper schema validation (Zod). Address potential linting or type errors.
-5. **Test Driven:** Whenever adding features or fixing bugs, verify existing tests or add new tests to ensure the behavioral correctness of the change. Validate changes with `npm run test` or the appropriate testing commands.
-6. **No Silent Failures:** If an intended change conflicts with existing rules or breaks the build, stop and inform the user or re-evaluate the strategy. Do not push through breaking changes.
+1. **행동 전 검증 (Verify Before Action):** 변경을 적용하기 전에 항상 기존 코드, 타입, 설정을 읽으세요. 구조를 추측하지 마세요. 주변 맥락을 파악하기 위해 검색(`grep_search`, `glob`)과 읽기(`read_file`) 도구를 사용하세요.
+2. **기존 패턴 준수 (Follow Existing Patterns):** 프로젝트에 이미 정립된 아키텍처 패턴, 명명 규칙, 파일 구조를 엄격히 준수하세요. 명시적으로 지시받지 않는 한 새로운 라이브러리나 프레임워크를 도입하지 마세요.
+3. **원자적이고 집중된 변경 (Atomic & Focused Changes):** 변경 사항은 요청된 작업과 직접 관련된 것으로만 엄격히 제한하세요. 무관한 리팩터링을 임의로 수행하지 마세요.
+4. **타입 안전성 및 린터 준수 (Type Safety & Linters):** TypeScript strict mode를 절대로 우회하지 마세요(예: `any`, `@ts-ignore` 금지). 명시적인 타입 가드와 적절한 스키마 검증(Zod)을 사용하세요. 잠재적인 린트 오류나 타입 오류를 사전에 해결하세요.
+5. **테스트 주도 검증 (Test Driven):** 기능을 추가하거나 버그를 수정할 때는 기존 테스트를 확인하거나 새 테스트를 추가하여 변경 사항의 동작 정확성을 검증하세요. 변경 사항은 반드시 프로젝트 테스트 게이트인 `bun run test`로 검증하세요.
+6. **실패 묵인 금지 (No Silent Failures):** 의도한 변경이 기존 규칙과 충돌하거나 빌드를 깨뜨리는 경우 작업을 중단하고 사용자에게 알리거나 전략을 재평가하세요. 호환성을 깨뜨리는 변경을 억지로 밀어붙이지 마세요.
 
 ## 검증 명령
 
-- **테스트(게이트): `bun run test`** — 루트에서 실행하며 backend/collector/frontend 세 패키지를 모두 돈다. 이 저장소의 유일한 녹색 게이트다.
-- 위 5번 항목의 `npm run test`는 이 저장소에서 맞지 않는다. bun 워크스페이스이므로 `bun run test`를 쓴다.
-- **타입체크는 현재 게이트가 아니다.** `tsc -b`는 기준선에서 이미 `TS2688`(bun-types/@types/node 해석 실패)로 깨져 있고, `tsc --noEmit -p tsconfig.json`은 `files: []` 솔루션 설정이라 아무것도 검사하지 않고 통과한다. 타입 오류를 게이트로 잡을 수 없다는 뜻이니, 5번 항목은 사람이 눈으로 지켜야 한다.
-- 새 워크트리에서는 `bun install`을 먼저 실행해야 한다. 하지 않으면 의존성이 없어 게이트가 실패한다.
+- **테스트(게이트): `bun run test`** — 루트에서 실행하며 backend/collector/frontend 세 패키지를 모두 검증합니다. 이 저장소의 유일한 녹색 게이트입니다.
+- **타입체크는 현재 게이트가 아닙니다.** `tsc -b`는 기준선에서 이미 `TS2688`(bun-types/@types/node 해석 실패)로 깨져 있고, `tsc --noEmit -p tsconfig.json`은 `files: []` 솔루션 설정이라 아무것도 검사하지 않고 통과합니다. 타입 오류를 게이트로 잡을 수 없으므로, 4번 항목(타입 안전성)은 작업자와 리뷰어가 눈으로 철저히 확인해야 합니다.
+- 새 워크트리에서는 `bun install`을 먼저 실행해야 합니다. 실행하지 않으면 의존성 부재로 게이트가 실패합니다.
 
 ## Orca relay 파이프라인 워커일 때
 
-Orca dispatch preamble을 받았다면, 작업을 시작하기 전에 자신의 역할 파일을 읽고 그 규범을 따를 것.
+Orca dispatch preamble을 받았다면, 작업을 시작하기 전에 자신의 역할 파일을 읽고 그 규범을 따르세요.
 
 | 역할 | 파일 |
 |---|---|
 | 구현자 | [.ai/roles/implementer.md](./.ai/roles/implementer.md) |
 | 리뷰어 | [.ai/roles/reviewer.md](./.ai/roles/reviewer.md) |
 
-역할은 preamble의 TASK 블록이 지정한다.
+역할은 preamble의 TASK 블록이 지정합니다.
 
-**그 preamble이 없다면 이 절을 무시할 것.** 파이프라인 밖에서 이 저장소를 평범하게 쓸 때는 아무 제약도 추가되지 않는다.
+**그 preamble이 없다면 이 절을 무시하세요.** 파이프라인 밖에서 이 저장소를 평범하게 쓸 때는 아무 제약도 추가되지 않습니다.
 
 ---
-
-
